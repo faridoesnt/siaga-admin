@@ -3,7 +3,7 @@ name: Deploy SIAGA Admin Web (Prod)
 on:
   push:
     branches:
-      - main
+      - master
   workflow_dispatch:
 
 jobs:
