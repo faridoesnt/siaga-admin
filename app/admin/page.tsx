@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useAuthGuard } from "@/lib/useAuthGuard";
+import { getAuthUser } from "@/lib/auth";
 import { canManage, canView } from "@/lib/permissions";
 import { apiFetch } from "@/lib/apiClient";
 import { ApiError } from "@/lib/types";
@@ -34,6 +35,7 @@ export default function AdminPage() {
   const [formEmail, setFormEmail] = useState("");
   const [formPassword, setFormPassword] = useState("");
   const [formPerms, setFormPerms] = useState<string[]>([]);
+  const authUser = getAuthUser();
 
   useEffect(() => {
     if (!ready) return;
@@ -265,31 +267,33 @@ export default function AdminPage() {
                 </td>
                 {canManage("ADMIN") && (
                   <td className="px-3 py-1.5 text-right">
-                    <div className="inline-flex gap-1">
-                      <button
-                        type="button"
-                        onClick={() => openEdit(admin)}
-                        className="text-xs font-medium text-slate-700 hover:underline"
-                      >
-                        Edit
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => openReset(admin)}
-                        className="text-xs font-medium text-amber-700 hover:underline"
-                      >
-                        Reset Password
-                      </button>
-                      <Button
-                        type="button"
-                        size="sm"
-                        variant="danger"
-                        className="text-xs px-2 py-1"
-                        onClick={() => openDelete(admin)}
-                      >
-                        Delete
-                      </Button>
-                    </div>
+                    {authUser && authUser.id === admin.id ? null : (
+                      <div className="inline-flex gap-1">
+                        <button
+                          type="button"
+                          onClick={() => openEdit(admin)}
+                          className="text-xs font-medium text-slate-700 hover:underline"
+                        >
+                          Edit
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => openReset(admin)}
+                          className="text-xs font-medium text-amber-700 hover:underline"
+                        >
+                          Reset Password
+                        </button>
+                        <Button
+                          type="button"
+                          size="sm"
+                          variant="danger"
+                          className="text-xs px-2 py-1"
+                          onClick={() => openDelete(admin)}
+                        >
+                          Delete
+                        </Button>
+                      </div>
+                    )}
                   </td>
                 )}
               </tr>
