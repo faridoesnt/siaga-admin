@@ -14,6 +14,7 @@ import { Button, ConfirmModal, Modal } from "@/components/ui";
 import { showError, showSuccess } from "@/lib/toast";
 import { formatDate } from "@/lib/date";
 import { Pagination } from "@/components/pagination";
+import { canManage, canView } from "@/lib/permissions";
 
 interface FormState {
   user_id: string;
@@ -49,6 +50,11 @@ export default function SpotAssignmentPage() {
 
   useEffect(() => {
     if (!ready) return;
+    if (!canView("SPOT_ASSIGNMENT")) {
+      showError("You do not have access to this page.");
+      router.replace("/dashboard");
+      return;
+    }
     const load = async () => {
       setLoading(true);
       setError(null);
@@ -80,6 +86,11 @@ export default function SpotAssignmentPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setSubmitting(true);
+    if (!canManage("SPOT_ASSIGNMENT")) {
+      showError("You do not have permission to manage spot assignments.");
+      setSubmitting(false);
+      return;
+    }
     try {
       if (editingId != null) {
         await apiFetch(`/v1/admin/user-attendance-spots/${editingId}`, {
@@ -147,6 +158,10 @@ export default function SpotAssignmentPage() {
   const confirmDelete = async () => {
     if (confirmDeleteId == null) return;
     const id = confirmDeleteId;
+    if (!canManage("SPOT_ASSIGNMENT")) {
+      showError("You do not have permission to delete spot assignments.");
+      return;
+    }
     try {
       await apiFetch(`/v1/admin/user-attendance-spots/${id}`, {
         method: "DELETE",
@@ -205,22 +220,24 @@ export default function SpotAssignmentPage() {
             Assign attendance spots to each satpam.
           </p>
         </div>
-        <Button
-          type="button"
-          size="sm"
-          onClick={() => {
-            setEditingId(null);
-            setForm({
-              user_id: "",
-              attendance_spot_id: "",
-              active_from: "",
-              active_until: "",
-            });
-            setFormOpen(true);
-          }}
-        >
-          + Assign Spot
-        </Button>
+        {canManage("SPOT_ASSIGNMENT") && (
+          <Button
+            type="button"
+            size="sm"
+            onClick={() => {
+              setEditingId(null);
+              setForm({
+                user_id: "",
+                attendance_spot_id: "",
+                active_from: "",
+                active_until: "",
+              });
+              setFormOpen(true);
+            }}
+          >
+            + Assign Spot
+          </Button>
+        )}
       </div>
 
       {error && (
@@ -281,7 +298,9 @@ export default function SpotAssignmentPage() {
                 <th className="px-3 py-2">Spot</th>
                 <th className="px-3 py-2">Active from</th>
                 <th className="px-3 py-2">Active until</th>
-                <th className="px-3 py-2">Actions</th>
+                {canManage("SPOT_ASSIGNMENT") && (
+                  <th className="px-3 py-2">Actions</th>
+                )}
               </tr>
             </thead>
             <tbody>
@@ -305,29 +324,31 @@ export default function SpotAssignmentPage() {
                         <span className="text-slate-400">ongoing</span>
                       )}
                   </td>
-                  <td className="px-3 py-2 space-x-2">
-                    <Button
-                      type="button"
-                      size="sm"
-                      variant="ghost"
-                      className="px-2 py-1 text-xs"
-                      onClick={() => {
-                        startEdit(it);
-                        setFormOpen(true);
-                      }}
-                    >
-                      Edit
-                    </Button>
-                    <Button
-                      type="button"
-                      size="sm"
-                      variant="danger"
-                      className="px-2 py-1 text-xs"
-                      onClick={() => handleDelete(it.id)}
-                    >
-                      Delete
-                    </Button>
-                  </td>
+                  {canManage("SPOT_ASSIGNMENT") && (
+                    <td className="px-3 py-2 space-x-2">
+                      <Button
+                        type="button"
+                        size="sm"
+                        variant="ghost"
+                        className="px-2 py-1 text-xs"
+                        onClick={() => {
+                          startEdit(it);
+                          setFormOpen(true);
+                        }}
+                      >
+                        Edit
+                      </Button>
+                      <Button
+                        type="button"
+                        size="sm"
+                        variant="danger"
+                        className="px-2 py-1 text-xs"
+                        onClick={() => handleDelete(it.id)}
+                      >
+                        Delete
+                      </Button>
+                    </td>
+                  )}
                 </tr>
               ))}
               {items.length === 0 && (

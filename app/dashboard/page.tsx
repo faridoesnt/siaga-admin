@@ -1,111 +1,100 @@
-"use client";
+ "use client";
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useAuthGuard } from "@/lib/useAuthGuard";
 import { apiFetch } from "@/lib/apiClient";
-import { ApiError, Satpam, ShiftSwapRequest, AdminAttendanceItem } from "@/lib/types";
+import { ApiError } from "@/lib/types";
+import type { AdminDashboardData } from "@/types/dashboard";
+import { DashboardView } from "@/components/dashboard/DashboardView";
 
-function todayString() {
+function currentMonth() {
   const d = new Date();
-  return d.toISOString().slice(0, 10);
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  return `${y}-${m}`;
 }
 
 export default function DashboardPage() {
   const ready = useAuthGuard();
   const router = useRouter();
-
-  const [totalSatpam, setTotalSatpam] = useState<number | null>(null);
-  const [pendingSwap, setPendingSwap] = useState<number | null>(null);
-  const [attendanceCount, setAttendanceCount] = useState<number | null>(null);
+  const [data, setData] = useState<AdminDashboardData | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [month, setMonth] = useState<string>(currentMonth());
 
   useEffect(() => {
     if (!ready) return;
-
     const load = async () => {
+      setLoading(true);
       setError(null);
       try {
-        const [satpam, swaps, attendance] = await Promise.all([
-          apiFetch<Satpam[]>("/v1/admin/satpam"),
-          apiFetch<ShiftSwapRequest[]>(
-            "/v1/admin/shift-swap-requests?status=PENDING"
-          ),
-          apiFetch<AdminAttendanceItem[]>(
-            `/v1/admin/attendance?date=${todayString()}`
-          ),
-        ]);
-        setTotalSatpam(satpam.length);
-        setPendingSwap(swaps.length);
-        setAttendanceCount(attendance.length);
+        const dashboard = await apiFetch<AdminDashboardData>(
+          `/v1/admin/dashboard?month=${encodeURIComponent(month)}`
+        );
+        setData(dashboard);
       } catch (err) {
         if (err instanceof ApiError && (err.status === 401 || err.status === 403)) {
           router.replace("/login");
           return;
         }
-        setError(err instanceof Error ? err.message : "Failed to load data");
+        setError(
+          err instanceof Error ? err.message : "Failed to load dashboard"
+        );
+      } finally {
+        setLoading(false);
       }
     };
-
     load();
-  }, [ready, router]);
+  }, [ready, router, month]);
 
   if (!ready) {
     return <p className="text-sm text-slate-500">Loading...</p>;
   }
 
-  return (
-    <div className="space-y-6">
-      <h2 className="text-xl font-semibold">Dashboard</h2>
-      {error && (
-        <p className="rounded-md bg-red-50 px-3 py-2 text-sm text-red-700">
-          {error}
-        </p>
-      )}
-      <div className="grid gap-4 md:grid-cols-3">
-        <DashboardCard
-          title="Total Satpam"
-          value={totalSatpam}
-          onClick={() => router.push("/satpam")}
-        />
-        <DashboardCard
-          title="Pending Shift Swaps"
-          value={pendingSwap}
-          onClick={() => router.push("/approvals")}
-        />
-        <DashboardCard
-          title="Today's Attendance"
-          value={attendanceCount}
-          onClick={() => router.push("/attendance")}
-        />
+  if (loading) {
+    return (
+      <div className="space-y-4">
+        <div className="h-6 w-40 animate-pulse rounded bg-slate-200" />
+        <div className="grid gap-3 md:grid-cols-5">
+          {Array.from({ length: 5 }).map((_, idx) => (
+            <div
+              key={idx}
+              className="h-20 animate-pulse rounded-lg border bg-slate-100"
+            />
+          ))}
+        </div>
+        <div className="h-64 animate-pulse rounded-lg border bg-slate-100" />
       </div>
-    </div>
-  );
-}
+    );
+  }
 
-function DashboardCard({
-  title,
-  value,
-  onClick,
-}: {
-  title: string;
-  value: number | null;
-  onClick: () => void;
-}) {
+  if (!data || error) {
+    return (
+      <div className="space-y-3">
+        <h2 className="text-sm font-semibold text-red-700">
+          Gagal memuat dashboard
+        </h2>
+        <p className="text-xs text-slate-700">
+          {error || "Terjadi kesalahan tak terduga."}
+        </p>
+        <button
+          type="button"
+          onClick={() => setMonth(currentMonth())}
+          className="rounded-md bg-slate-900 px-3 py-1.5 text-xs font-semibold text-slate-50"
+        >
+          Coba lagi
+        </button>
+      </div>
+    );
+  }
+
+  const handleMonthChange = (value: string) => {
+    if (!value) return;
+    setMonth(value);
+  };
+
   return (
-    <button
-      type="button"
-      onClick={onClick}
-      className="flex h-28 w-full flex-col justify-between rounded-lg border bg-white px-4 py-3 text-left shadow-sm hover:bg-slate-50"
-    >
-      <span className="text-xs font-medium uppercase text-slate-500">
-        {title}
-      </span>
-      <span className="text-3xl font-semibold">
-        {value === null ? "…" : value}
-      </span>
-      <span className="text-xs text-slate-500">View details</span>
-    </button>
+    <DashboardView data={data} month={month} onMonthChange={handleMonthChange} />
   );
 }
-

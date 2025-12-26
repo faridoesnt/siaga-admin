@@ -8,6 +8,8 @@ import { ApiError, ShiftSwapRequest } from "@/lib/types";
 import { Badge } from "@/components/ui";
 import { formatDate, formatDateTime } from "@/lib/date";
 import { Pagination } from "@/components/pagination";
+import { canView } from "@/lib/permissions";
+import { showError } from "@/lib/toast";
 
 export default function ApprovalsPage() {
   const ready = useAuthGuard();
@@ -44,6 +46,11 @@ export default function ApprovalsPage() {
 
   useEffect(() => {
     if (!ready) return;
+    if (!canView("SHIFT_SWAP")) {
+      showError("You do not have access to this page.");
+      router.replace("/dashboard");
+      return;
+    }
     loadData();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [ready]);

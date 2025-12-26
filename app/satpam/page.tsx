@@ -11,6 +11,7 @@ import { formatDate } from "@/lib/date";
 import { Pagination } from "@/components/pagination";
 import { downloadApiFile } from "@/lib/download";
 import { getToken, clearToken } from "@/lib/auth";
+import { canManage, canView } from "@/lib/permissions";
 
 const API_BASE_URL =
   process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:8686";
@@ -19,12 +20,34 @@ interface CreateSatpamForm {
   name: string;
   email: string;
   password: string;
+  is_active: boolean;
+  jabatan: string;
+  jenis_kelamin: "L" | "P";
+  tanggal_lahir: string;
+  tempat_lahir: string;
+  no_ktp: string;
+  alamat: string;
+  no_telepon: string;
+  agama: string;
+  status_pernikahan: string;
+  kebangsaan: string;
   work_start_date: string;
 }
 
 interface EditSatpamForm {
   name: string;
   email: string;
+  is_active: boolean;
+  jabatan: string;
+  jenis_kelamin: "L" | "P";
+  tanggal_lahir: string;
+  tempat_lahir: string;
+  no_ktp: string;
+  alamat: string;
+  no_telepon: string;
+  agama: string;
+  status_pernikahan: string;
+  kebangsaan: string;
   work_start_date: string;
 }
 
@@ -42,6 +65,17 @@ export default function SatpamPage() {
     name: "",
     email: "",
     password: "",
+    is_active: true,
+    jabatan: "",
+    jenis_kelamin: "L",
+    tanggal_lahir: "",
+    tempat_lahir: "",
+    no_ktp: "",
+    alamat: "",
+    no_telepon: "",
+    agama: "",
+    status_pernikahan: "",
+    kebangsaan: "",
     work_start_date: "",
   });
 
@@ -49,6 +83,17 @@ export default function SatpamPage() {
   const [editForm, setEditForm] = useState<EditSatpamForm>({
     name: "",
     email: "",
+    is_active: true,
+    jabatan: "",
+    jenis_kelamin: "L",
+    tanggal_lahir: "",
+    tempat_lahir: "",
+    no_ktp: "",
+    alamat: "",
+    no_telepon: "",
+    agama: "",
+    status_pernikahan: "",
+    kebangsaan: "",
     work_start_date: "",
   });
   const [savingEdit, setSavingEdit] = useState(false);
@@ -61,7 +106,7 @@ export default function SatpamPage() {
   const [enrollStatus, setEnrollStatus] = useState<FaceEnrollStatus | null>(null);
   const [createOpen, setCreateOpen] = useState(false);
   const [confirmState, setConfirmState] = useState<{
-    type: "toggle" | "delete" | "deleteEnroll" | null;
+    type: "toggle" | "delete" | "deleteEnroll" | "resetPassword" | null;
     target?: Satpam;
   }>({ type: null });
   const [page, setPage] = useState(1);
@@ -71,9 +116,50 @@ export default function SatpamPage() {
   const [importFile, setImportFile] = useState<File | null>(null);
   const [importing, setImporting] = useState(false);
   const [importError, setImportError] = useState<string | null>(null);
+  const [resetPassword, setResetPassword] = useState("");
+  const [resetLoading, setResetLoading] = useState(false);
+  const [viewSatpam, setViewSatpam] = useState<Satpam | null>(null);
+  const [actionMenuFor, setActionMenuFor] = useState<number | null>(null);
+
+  const toInputDate = (value?: string | null): string => {
+    if (!value) return "";
+    // If already YYYY-MM-DD
+    if (/^\d{4}-\d{2}-\d{2}$/.test(value)) {
+      return value;
+    }
+    // If ISO string, cut to first 10 chars
+    if (value.length >= 10 && value[4] === "-" && value[7] === "-") {
+      return value.slice(0, 10);
+    }
+    // Fallback via Date parsing
+    const d = new Date(value);
+    if (!Number.isNaN(d.getTime())) {
+      return d.toISOString().slice(0, 10);
+    }
+    return value;
+  };
+
+  // Close action dropdown when clicking anywhere outside the actions cell.
+  useEffect(() => {
+    if (actionMenuFor === null) return;
+    const handleClickOutside = () => {
+      setActionMenuFor(null);
+    };
+    document.addEventListener("click", handleClickOutside);
+    return () => {
+      document.removeEventListener("click", handleClickOutside);
+    };
+  }, [actionMenuFor]);
 
   useEffect(() => {
     if (!ready) return;
+
+    const canViewSatpam = canView("SATPAM");
+    if (!canViewSatpam) {
+      showError("You do not have access to this page.");
+      router.replace("/dashboard");
+      return;
+    }
     const load = async () => {
       setLoading(true);
       setError(null);
@@ -114,6 +200,10 @@ export default function SatpamPage() {
 
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!canManage("SATPAM")) {
+      showError("You do not have permission to manage satpam.");
+      return;
+    }
     setCreating(true);
     try {
       const created = await apiFetch<Satpam>("/v1/admin/satpam", {
@@ -125,6 +215,17 @@ export default function SatpamPage() {
         name: "",
         email: "",
         password: "",
+        is_active: true,
+        jabatan: "",
+        jenis_kelamin: "L",
+        tanggal_lahir: "",
+        tempat_lahir: "",
+        no_ktp: "",
+        alamat: "",
+        no_telepon: "",
+        agama: "",
+        status_pernikahan: "",
+        kebangsaan: "",
         work_start_date: "",
       });
       showSuccess("Satpam created.");
@@ -149,6 +250,10 @@ export default function SatpamPage() {
   const confirmToggleActive = async () => {
     const user = confirmState.target;
     if (!user) return;
+    if (!canManage("SATPAM")) {
+      showError("You do not have permission to change status.");
+      return;
+    }
     try {
       await apiFetch<{ id: number; is_active: boolean }>(
         `/v1/admin/satpam/${user.id}/status`,
@@ -184,7 +289,18 @@ export default function SatpamPage() {
     setEditForm({
       name: user.name,
       email: user.email,
-      work_start_date: user.work_start_date || "",
+      is_active: user.is_active,
+      jabatan: user.jabatan || "",
+      jenis_kelamin: user.jenis_kelamin,
+      tanggal_lahir: toInputDate(user.tanggal_lahir),
+      tempat_lahir: user.tempat_lahir || "",
+      no_ktp: user.no_ktp || "",
+      alamat: user.alamat || "",
+      no_telepon: user.no_telepon || "",
+      agama: user.agama || "",
+      status_pernikahan: user.status_pernikahan || "",
+      kebangsaan: user.kebangsaan || "",
+      work_start_date: toInputDate(user.work_start_date),
     });
   };
 
@@ -193,6 +309,17 @@ export default function SatpamPage() {
     setEditForm({
       name: "",
       email: "",
+      is_active: true,
+      jabatan: "",
+      jenis_kelamin: "L",
+      tanggal_lahir: "",
+      tempat_lahir: "",
+      no_ktp: "",
+      alamat: "",
+      no_telepon: "",
+      agama: "",
+      status_pernikahan: "",
+      kebangsaan: "",
       work_start_date: "",
     });
   };
@@ -202,22 +329,14 @@ export default function SatpamPage() {
     if (!editing) return;
     setSavingEdit(true);
     try {
-      const updated = await apiFetch<Satpam>(
-        `/v1/admin/satpam/${editing.id}`,
-        {
-          method: "PATCH",
-          body: JSON.stringify(editForm),
-        }
-      );
+      const updated = await apiFetch<Satpam>(`/v1/admin/satpam/${editing.id}`, {
+        method: "PATCH",
+        body: JSON.stringify(editForm),
+      });
       setSatpam((prev) =>
         prev.map((s) => (s.id === updated.id ? updated : s))
       );
-      setEditing(null);
-      setEditForm({
-        name: "",
-        email: "",
-        work_start_date: "",
-      });
+      cancelEdit();
       showSuccess("Satpam updated.");
     } catch (err) {
       if (
@@ -242,6 +361,10 @@ export default function SatpamPage() {
   const confirmDelete = async () => {
     const user = confirmState.target;
     if (!user) return;
+    if (!canManage("SATPAM")) {
+      showError("You do not have permission to delete satpam.");
+      return;
+    }
     try {
       await apiFetch(`/v1/admin/satpam/${user.id}`, {
         method: "DELETE",
@@ -266,7 +389,52 @@ export default function SatpamPage() {
     }
   };
 
+  const handleResetPassword = (user: Satpam) => {
+    setResetPassword("");
+    setConfirmState({ type: "resetPassword", target: user });
+  };
+
+  const confirmResetPassword = async () => {
+    const user = confirmState.target;
+    if (!user) return;
+    if (!canManage("SATPAM")) {
+      showError("You do not have permission to reset password.");
+      return;
+    }
+    if (!resetPassword || resetPassword.length < 8) {
+      showError("New password must be at least 8 characters.");
+      return;
+    }
+    setResetLoading(true);
+    try {
+      await apiFetch(`/v1/admin/satpam/${user.id}/reset-password`, {
+        method: "POST",
+        body: JSON.stringify({ new_password: resetPassword }),
+      });
+      showSuccess(`Password for ${user.name} has been reset.`);
+      setConfirmState({ type: null });
+      setResetPassword("");
+    } catch (err) {
+      if (
+        err instanceof ApiError &&
+        (err.status === 401 || err.status === 403)
+      ) {
+        router.replace("/login");
+        return;
+      }
+      const msg =
+        err instanceof Error ? err.message : "Failed to reset password";
+      showError(msg);
+    } finally {
+      setResetLoading(false);
+    }
+  };
+
   const handleDownloadTemplate = async () => {
+    if (!canManage("SATPAM")) {
+      showError("You do not have permission to manage satpam.");
+      return;
+    }
     try {
       await downloadApiFile(
         "/v1/admin/import-templates/satpam",
@@ -281,6 +449,10 @@ export default function SatpamPage() {
   };
 
   const handleExportSatpam = async () => {
+    if (!canManage("SATPAM")) {
+      showError("You do not have permission to export satpam.");
+      return;
+    }
     try {
       await downloadApiFile(
         "/v1/admin/export/satpam",
@@ -306,6 +478,10 @@ export default function SatpamPage() {
     e.preventDefault();
     if (!importFile) {
       setImportError("Please select an Excel (.xlsx) file.");
+      return;
+    }
+    if (!canManage("SATPAM")) {
+      setImportError("You do not have permission to manage satpam.");
       return;
     }
     setImporting(true);
@@ -364,6 +540,10 @@ export default function SatpamPage() {
   };
 
   const openEnroll = (user: Satpam) => {
+    if (!canManage("SATPAM")) {
+      showError("You do not have permission to manage face enrollment.");
+      return;
+    }
     setEnrollUser(user);
     setEnrollFiles([]);
     setEnrollError(null);
@@ -501,10 +681,14 @@ export default function SatpamPage() {
     return <p className="text-sm text-slate-500">Loading...</p>;
   }
 
+  const canViewSatpam = canView("SATPAM");
+  const canManageSatpam = canManage("SATPAM");
+  const showActionsColumn = canViewSatpam || canManageSatpam;
+
   return (
     <div className="space-y-6">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <div>
+       <div>
           <h2 className="text-xl font-semibold">Satpam</h2>
           <p className="text-xs text-slate-500">
             Manage guards and face enrollment.
@@ -525,6 +709,7 @@ export default function SatpamPage() {
             onClick={() => {
               setCreateOpen(true);
             }}
+            disabled={!canManage("SATPAM")}
           >
             + Add Satpam
           </Button>
@@ -539,34 +724,40 @@ export default function SatpamPage() {
           <h3 className="text-sm font-semibold text-slate-700">
             Satpam List
           </h3>
-          <div className="flex flex-wrap gap-2">
-            <Button
-              type="button"
-              size="sm"
-              variant="secondary"
-              onClick={handleDownloadTemplate}
-            >
-              Download Template
-            </Button>
-            <Button
-              type="button"
-              size="sm"
-              variant="secondary"
-              onClick={() => {
-                setImportOpen(true);
-                setImportError(null);
-              }}
-            >
-              Import from Excel
-            </Button>
-            <Button
-              type="button"
-              size="sm"
-              variant="secondary"
-              onClick={handleExportSatpam}
-            >
-              Export Satpam
-            </Button>
+         <div className="flex flex-wrap gap-2">
+            {canManage("SATPAM") && (
+              <>
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="secondary"
+                  onClick={handleDownloadTemplate}
+                >
+                  Download Template
+                </Button>
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="secondary"
+                  onClick={() => {
+                    setImportOpen(true);
+                    setImportError(null);
+                  }}
+                >
+                  Import from Excel
+                </Button>
+              </>
+            )}
+            {canManage("SATPAM") && (
+              <Button
+                type="button"
+                size="sm"
+                variant="secondary"
+                onClick={handleExportSatpam}
+              >
+                Export Satpam
+              </Button>
+            )}
           </div>
         </div>
         {loading ? (
@@ -580,16 +771,28 @@ export default function SatpamPage() {
                 <tr>
                   <th className="px-3 py-2">Name</th>
                   <th className="px-3 py-2">Email</th>
+                  <th className="px-3 py-2">Position</th>
+                  <th className="px-3 py-2">Gender</th>
+                  <th className="px-3 py-2">Phone</th>
                   <th className="px-3 py-2">Work start</th>
                   <th className="px-3 py-2">Active</th>
-                  <th className="px-3 py-2">Actions</th>
+                  {showActionsColumn && (
+                    <th className="px-3 py-2">Actions</th>
+                  )}
                 </tr>
               </thead>
               <tbody>
-                {paged.map((s) => (
+                {paged.map((s, rowIndex) => (
                   <tr key={s.id} className="border-b last:border-0">
                     <td className="px-3 py-2">{s.name}</td>
                     <td className="px-3 py-2">{s.email}</td>
+                    <td className="px-3 py-2">
+                      {s.jabatan}
+                    </td>
+                    <td className="px-3 py-2">
+                      {s.jenis_kelamin === "L" ? "Laki-laki" : "Perempuan"}
+                    </td>
+                    <td className="px-3 py-2">{s.no_telepon}</td>
                     <td className="px-3 py-2">
                       {s.work_start_date ? (
                         formatDate(s.work_start_date)
@@ -602,52 +805,112 @@ export default function SatpamPage() {
                         {s.is_active ? "Active" : "Inactive"}
                       </Badge>
                     </td>
-                    <td className="px-3 py-2">
-                      <div className="flex flex-wrap items-center gap-2">
-                        <Button
-                          type="button"
-                          size="sm"
-                          variant="ghost"
-                          className="text-xs px-2 py-1"
-                          onClick={() => startEdit(s)}
-                        >
-                          Edit
-                        </Button>
-                        <Button
-                          type="button"
-                          size="sm"
-                          variant="ghost"
-                          className="text-xs px-2 py-1"
-                          onClick={() => toggleActive(s)}
-                        >
-                          {s.is_active ? "Disable" : "Enable"}
-                        </Button>
-                        <Button
-                          type="button"
-                          size="sm"
-                          variant="ghost"
-                          className="text-xs px-2 py-1 text-emerald-700"
-                          onClick={() => openEnroll(s)}
-                        >
-                          Enroll Face
-                        </Button>
-                        <Button
-                          type="button"
-                          size="sm"
-                          variant="danger"
-                          className="text-xs px-2 py-1"
-                          onClick={() => handleDelete(s)}
-                        >
-                          Delete
-                        </Button>
-                      </div>
-                    </td>
+                    {showActionsColumn && (
+                      <td
+                        className="px-3 py-2"
+                        onClick={(e) => {
+                          // Prevent closing the dropdown when clicking inside the cell.
+                          e.stopPropagation();
+                        }}
+                      >
+                        <div className="flex items-center gap-2">
+                          {canViewSatpam && (
+                            <Button
+                              type="button"
+                              size="sm"
+                              variant="ghost"
+                              className="px-2 py-1 text-xs"
+                              onClick={() => setViewSatpam(s)}
+                            >
+                              View
+                            </Button>
+                          )}
+                          {canManageSatpam && (
+                            <div className="relative">
+                              <Button
+                                type="button"
+                                size="sm"
+                                variant="secondary"
+                                className="px-2 py-1 text-xs"
+                                onClick={() =>
+                                  setActionMenuFor((prev) =>
+                                    prev === s.id ? null : s.id
+                                  )
+                                }
+                              >
+                                More
+                              </Button>
+                              {actionMenuFor === s.id && (
+                                <div
+                                  className={`absolute right-0 z-10 w-44 rounded-md border bg-white py-1 text-xs shadow-lg ${
+                                    rowIndex >= paged.length - 2
+                                      ? "bottom-full mb-1"
+                                      : "mt-1"
+                                  }`}
+                                >
+                                  <button
+                                    type="button"
+                                    className="flex w-full items-center px-3 py-1.5 text-left hover:bg-slate-50"
+                                    onClick={() => {
+                                      setActionMenuFor(null);
+                                      startEdit(s);
+                                    }}
+                                  >
+                                    Edit
+                                  </button>
+                                  <button
+                                    type="button"
+                                    className="flex w-full items-center px-3 py-1.5 text-left hover:bg-slate-50"
+                                    onClick={() => {
+                                      setActionMenuFor(null);
+                                      handleResetPassword(s);
+                                    }}
+                                  >
+                                    Reset password
+                                  </button>
+                                  <button
+                                    type="button"
+                                    className="flex w-full items-center px-3 py-1.5 text-left hover:bg-slate-50"
+                                    onClick={() => {
+                                      setActionMenuFor(null);
+                                      toggleActive(s);
+                                    }}
+                                  >
+                                    {s.is_active ? "Disable" : "Enable"}
+                                  </button>
+                                  <button
+                                    type="button"
+                                    className="flex w-full items-center px-3 py-1.5 text-left hover:bg-slate-50"
+                                    onClick={() => {
+                                      setActionMenuFor(null);
+                                      openEnroll(s);
+                                    }}
+                                  >
+                                    Enroll face
+                                  </button>
+                                  <button
+                                    type="button"
+                                    className="flex w-full items-center px-3 py-1.5 text-left text-red-600 hover:bg-red-50"
+                                    onClick={() => {
+                                      setActionMenuFor(null);
+                                      handleDelete(s);
+                                    }}
+                                  >
+                                    Delete
+                                  </button>
+                                </div>
+                              )}
+                            </div>
+                          )}
+                        </div>
+                      </td>
+                    )}
                   </tr>
                ))}
                 {filtered.length === 0 && (
                   <tr>
                     <td
-                      colSpan={5}
+                      colSpan={showActionsColumn ? 8 : 7}
                       className="px-3 py-3 text-center text-sm text-slate-500"
                     >
                       No satpam found.
@@ -666,6 +929,123 @@ export default function SatpamPage() {
         />
       </section>
 
+      {viewSatpam && (
+        <Modal
+          open={!!viewSatpam}
+          onClose={() => setViewSatpam(null)}
+          title={`Satpam Detail — ${viewSatpam.name}`}
+          size="lg"
+        >
+          <div className="grid gap-3 md:grid-cols-2 text-sm">
+            <div className="md:col-span-2">
+              <p className="text-xs font-semibold text-slate-700">Account</p>
+            </div>
+            <div>
+              <p className="text-[11px] uppercase text-slate-500">Name</p>
+              <p className="font-medium">{viewSatpam.name}</p>
+            </div>
+            <div>
+              <p className="text-[11px] uppercase text-slate-500">Email</p>
+              <p className="font-medium break-all">{viewSatpam.email}</p>
+            </div>
+            <div>
+              <p className="text-[11px] uppercase text-slate-500">Active</p>
+              <Badge variant={viewSatpam.is_active ? "success" : "muted"}>
+                {viewSatpam.is_active ? "Active" : "Inactive"}
+              </Badge>
+            </div>
+
+            <div className="md:col-span-2 mt-2">
+              <p className="text-xs font-semibold text-slate-700">
+                Personal Information
+              </p>
+            </div>
+            <div>
+              <p className="text-[11px] uppercase text-slate-500">Position</p>
+              <p className="font-medium">{viewSatpam.jabatan}</p>
+            </div>
+            <div>
+              <p className="text-[11px] uppercase text-slate-500">Gender</p>
+              <p className="font-medium">
+                {viewSatpam.jenis_kelamin === "L" ? "Laki-laki" : "Perempuan"}
+              </p>
+            </div>
+            <div>
+              <p className="text-[11px] uppercase text-slate-500">
+                Birth date
+              </p>
+              <p className="font-medium">
+                {viewSatpam.tanggal_lahir
+                  ? formatDate(viewSatpam.tanggal_lahir)
+                  : "-"}
+              </p>
+            </div>
+            <div>
+              <p className="text-[11px] uppercase text-slate-500">
+                Birth place
+              </p>
+              <p className="font-medium">
+                {viewSatpam.tempat_lahir || "-"}
+              </p>
+            </div>
+            <div>
+              <p className="text-[11px] uppercase text-slate-500">
+                National ID (No KTP)
+              </p>
+              <p className="font-medium">
+                {viewSatpam.no_ktp || "-"}
+              </p>
+            </div>
+            <div>
+              <p className="text-[11px] uppercase text-slate-500">
+                Phone number
+              </p>
+              <p className="font-medium">
+                {viewSatpam.no_telepon}
+              </p>
+            </div>
+            <div>
+              <p className="text-[11px] uppercase text-slate-500">
+                Work start date
+              </p>
+              <p className="font-medium">
+                {formatDate(viewSatpam.work_start_date)}
+              </p>
+            </div>
+            <div className="md:col-span-2">
+              <p className="text-[11px] uppercase text-slate-500">
+                Address
+              </p>
+              <p className="font-medium whitespace-pre-wrap">
+                {viewSatpam.alamat}
+              </p>
+            </div>
+            <div>
+              <p className="text-[11px] uppercase text-slate-500">Religion</p>
+              <p className="font-medium">
+                {viewSatpam.agama || "-"}
+              </p>
+            </div>
+            <div>
+              <p className="text-[11px] uppercase text-slate-500">
+                Marital status
+              </p>
+              <p className="font-medium">
+                {viewSatpam.status_pernikahan || "-"}
+              </p>
+            </div>
+            <div>
+              <p className="text-[11px] uppercase text-slate-500">
+                Nationality
+              </p>
+              <p className="font-medium">
+                {viewSatpam.kebangsaan || "-"}
+              </p>
+            </div>
+          </div>
+        </Modal>
+      )}
+
       {/* Create / Edit modal */}
       <Modal
         open={!!editing || createOpen}
@@ -679,9 +1059,12 @@ export default function SatpamPage() {
           onSubmit={editing ? handleEditSubmit : handleCreate}
           className="grid gap-3 md:grid-cols-2"
         >
+          <div className="md:col-span-2 mb-1">
+            <p className="text-xs font-semibold text-slate-700">Account</p>
+          </div>
           <div className="md:col-span-1">
             <label className="mb-1 block text-xs font-medium text-slate-700">
-              Name
+              Name <span className="text-red-500">*</span>
             </label>
             <input
               type="text"
@@ -697,7 +1080,7 @@ export default function SatpamPage() {
           </div>
           <div className="md:col-span-1">
             <label className="mb-1 block text-xs font-medium text-slate-700">
-              Email
+              Email <span className="text-red-500">*</span>
             </label>
             <input
               type="email"
@@ -714,7 +1097,7 @@ export default function SatpamPage() {
           {!editing && (
             <div className="md:col-span-1">
               <label className="mb-1 block text-xs font-medium text-slate-700">
-                Password
+                Password <span className="text-red-500">*</span>
               </label>
               <input
                 type="password"
@@ -727,9 +1110,155 @@ export default function SatpamPage() {
               />
             </div>
           )}
+          <div className="md:col-span-1 flex items-center gap-2">
+            <label className="block text-xs font-medium text-slate-700">
+              Active
+            </label>
+            <input
+              type="checkbox"
+              className="h-3 w-3"
+              checked={editing ? editForm.is_active : createForm.is_active}
+              onChange={(e) =>
+                editing
+                  ? setEditForm((f) => ({ ...f, is_active: e.target.checked }))
+                  : setCreateForm((f) => ({
+                      ...f,
+                      is_active: e.target.checked,
+                    }))
+              }
+            />
+          </div>
+
+          <div className="md:col-span-2 mt-2 mb-1">
+            <p className="text-xs font-semibold text-slate-700">
+              Personal Information
+            </p>
+          </div>
+
           <div className="md:col-span-1">
             <label className="mb-1 block text-xs font-medium text-slate-700">
-              Work start date
+              Position (Jabatan) <span className="text-red-500">*</span>
+            </label>
+            <input
+              type="text"
+              required
+              className="w-full rounded-md border px-2 py-1.5 text-sm"
+              value={editing ? editForm.jabatan : createForm.jabatan}
+              onChange={(e) =>
+                editing
+                  ? setEditForm((f) => ({ ...f, jabatan: e.target.value }))
+                  : setCreateForm((f) => ({ ...f, jabatan: e.target.value }))
+              }
+            />
+          </div>
+
+          <div className="md:col-span-1">
+            <label className="mb-1 block text-xs font-medium text-slate-700">
+              Gender <span className="text-red-500">*</span>
+            </label>
+            <select
+              className="w-full rounded-md border px-2 py-1.5 text-sm"
+              value={editing ? editForm.jenis_kelamin : createForm.jenis_kelamin}
+              onChange={(e) =>
+                editing
+                  ? setEditForm((f) => ({
+                      ...f,
+                      jenis_kelamin: e.target.value as "L" | "P",
+                    }))
+                  : setCreateForm((f) => ({
+                      ...f,
+                      jenis_kelamin: e.target.value as "L" | "P",
+                    }))
+              }
+            >
+              <option value="L">Laki-laki</option>
+              <option value="P">Perempuan</option>
+            </select>
+          </div>
+
+          <div className="md:col-span-1">
+            <label className="mb-1 block text-xs font-medium text-slate-700">
+              Birth date
+            </label>
+            <input
+              type="date"
+              className="w-full rounded-md border px-2 py-1.5 text-sm"
+              value={editing ? editForm.tanggal_lahir : createForm.tanggal_lahir}
+              onChange={(e) =>
+                editing
+                  ? setEditForm((f) => ({
+                      ...f,
+                      tanggal_lahir: e.target.value,
+                    }))
+                  : setCreateForm((f) => ({
+                      ...f,
+                      tanggal_lahir: e.target.value,
+                    }))
+              }
+            />
+          </div>
+
+          <div className="md:col-span-1">
+            <label className="mb-1 block text-xs font-medium text-slate-700">
+              Birth place
+            </label>
+            <input
+              type="text"
+              className="w-full rounded-md border px-2 py-1.5 text-sm"
+              value={editing ? editForm.tempat_lahir : createForm.tempat_lahir}
+              onChange={(e) =>
+                editing
+                  ? setEditForm((f) => ({
+                      ...f,
+                      tempat_lahir: e.target.value,
+                    }))
+                  : setCreateForm((f) => ({
+                      ...f,
+                      tempat_lahir: e.target.value,
+                    }))
+              }
+            />
+          </div>
+
+          <div className="md:col-span-1">
+            <label className="mb-1 block text-xs font-medium text-slate-700">
+              National ID (No KTP)
+            </label>
+            <input
+              type="text"
+              className="w-full rounded-md border px-2 py-1.5 text-sm"
+              value={editing ? editForm.no_ktp : createForm.no_ktp}
+              onChange={(e) =>
+                editing
+                  ? setEditForm((f) => ({ ...f, no_ktp: e.target.value }))
+                  : setCreateForm((f) => ({ ...f, no_ktp: e.target.value }))
+              }
+            />
+          </div>
+
+          <div className="md:col-span-1">
+            <label className="mb-1 block text-xs font-medium text-slate-700">
+              Phone number <span className="text-red-500">*</span>
+            </label>
+            <input
+              type="text"
+              required
+              className="w-full rounded-md border px-2 py-1.5 text-sm"
+              value={editing ? editForm.no_telepon : createForm.no_telepon}
+              onChange={(e) =>
+                editing
+                  ? setEditForm((f) => ({ ...f, no_telepon: e.target.value }))
+                  : setCreateForm((f) => ({
+                      ...f,
+                      no_telepon: e.target.value,
+                    }))
+              }
+            />
+          </div>
+
+          <div className="md:col-span-1">
+            <label className="mb-1 block text-xs font-medium text-slate-700">
+              Work start date <span className="text-red-500">*</span>
             </label>
             <input
               type="date"
@@ -750,6 +1279,86 @@ export default function SatpamPage() {
               }
             />
           </div>
+          <div className="md:col-span-2">
+            <label className="mb-1 block text-xs font-medium text-slate-700">
+              Address <span className="text-red-500">*</span>
+            </label>
+            <textarea
+              required
+              className="w-full rounded-md border px-2 py-1.5 text-sm"
+              value={editing ? editForm.alamat : createForm.alamat}
+              onChange={(e) =>
+                editing
+                  ? setEditForm((f) => ({ ...f, alamat: e.target.value }))
+                  : setCreateForm((f) => ({ ...f, alamat: e.target.value }))
+              }
+            />
+          </div>
+
+          <div className="md:col-span-1">
+            <label className="mb-1 block text-xs font-medium text-slate-700">
+              Religion
+            </label>
+            <input
+              type="text"
+              className="w-full rounded-md border px-2 py-1.5 text-sm"
+              value={editing ? editForm.agama : createForm.agama}
+              onChange={(e) =>
+                editing
+                  ? setEditForm((f) => ({ ...f, agama: e.target.value }))
+                  : setCreateForm((f) => ({ ...f, agama: e.target.value }))
+              }
+            />
+          </div>
+
+          <div className="md:col-span-1">
+            <label className="mb-1 block text-xs font-medium text-slate-700">
+              Marital status
+            </label>
+            <input
+              type="text"
+              className="w-full rounded-md border px-2 py-1.5 text-sm"
+              value={
+                editing
+                  ? editForm.status_pernikahan
+                  : createForm.status_pernikahan
+              }
+              onChange={(e) =>
+                editing
+                  ? setEditForm((f) => ({
+                      ...f,
+                      status_pernikahan: e.target.value,
+                    }))
+                  : setCreateForm((f) => ({
+                      ...f,
+                      status_pernikahan: e.target.value,
+                    }))
+              }
+            />
+          </div>
+
+          <div className="md:col-span-1">
+            <label className="mb-1 block text-xs font-medium text-slate-700">
+              Nationality
+            </label>
+            <input
+              type="text"
+              className="w-full rounded-md border px-2 py-1.5 text-sm"
+              value={editing ? editForm.kebangsaan : createForm.kebangsaan}
+              onChange={(e) =>
+                editing
+                  ? setEditForm((f) => ({
+                      ...f,
+                      kebangsaan: e.target.value,
+                    }))
+                  : setCreateForm((f) => ({
+                      ...f,
+                      kebangsaan: e.target.value,
+                    }))
+              }
+            />
+          </div>
+
           <div className="md:col-span-2 flex justify-end gap-2 pt-2">
             <Button
               type="button"
@@ -869,6 +1478,63 @@ export default function SatpamPage() {
         onCancel={() => setConfirmState({ type: null })}
         onConfirm={confirmDelete}
       />
+      {confirmState.type === "resetPassword" && confirmState.target && (
+        <Modal
+          open={true}
+          onClose={() => {
+            setConfirmState({ type: null });
+            setResetPassword("");
+          }}
+          title="Reset Password"
+          size="sm"
+        >
+          <form
+            onSubmit={(e) => {
+              e.preventDefault();
+              void confirmResetPassword();
+            }}
+            className="space-y-3"
+          >
+            <p className="text-xs text-slate-700">
+              Reset password untuk{" "}
+              <span className="font-semibold">
+                {confirmState.target.name} ({confirmState.target.email})
+              </span>
+              .
+            </p>
+            <label className="block text-xs font-medium text-slate-700">
+              New password <span className="text-red-500">*</span>
+              <input
+                type="password"
+                className="mt-1 w-full rounded-md border border-slate-300 px-2 py-1 text-xs"
+                value={resetPassword}
+                onChange={(e) => setResetPassword(e.target.value)}
+              />
+            </label>
+            <div className="flex justify-end gap-2 pt-2">
+              <Button
+                type="button"
+                size="sm"
+                variant="secondary"
+                onClick={() => {
+                  setConfirmState({ type: null });
+                  setResetPassword("");
+                }}
+                disabled={resetLoading}
+              >
+                Cancel
+              </Button>
+              <Button
+                type="submit"
+                size="sm"
+                loading={resetLoading}
+              >
+                Reset Password
+              </Button>
+            </div>
+          </form>
+        </Modal>
+      )}
       <ConfirmModal
         open={confirmState.type === "deleteEnroll"}
         title="Delete Face Enrollment"

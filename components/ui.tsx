@@ -96,10 +96,10 @@ export function Modal({ open, onClose, title, children, size = "md" }: ModalProp
       onClick={onClose}
     >
       <div
-        className={`w-full ${sizeClass} rounded-lg bg-white shadow-lg transition-transform sm:scale-100 sm:rounded-lg sm:max-h-[90vh] sm:overflow-hidden`}
+        className={`flex w-full flex-col ${sizeClass} rounded-lg bg-white shadow-lg max-h-[90vh]`}
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="flex items-center justify-between border-b px-4 py-3">
+        <div className="flex shrink-0 items-center justify-between border-b px-4 py-3">
           <h2 className="text-sm font-semibold text-slate-900">
             {title ?? "Dialog"}
           </h2>
@@ -111,7 +111,7 @@ export function Modal({ open, onClose, title, children, size = "md" }: ModalProp
             Close
           </button>
         </div>
-        <div className="px-4 py-3">{children}</div>
+        <div className="flex-1 overflow-y-auto px-4 py-3">{children}</div>
       </div>
     </div>
   );
@@ -164,4 +164,3 @@ export function ConfirmModal({
     </Modal>
   );
 }
-

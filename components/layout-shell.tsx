@@ -5,31 +5,64 @@ import { usePathname, useRouter } from "next/navigation";
 import { ReactNode, useEffect, useState } from "react";
 import { clearToken, isAuthenticated } from "@/lib/auth";
 import { Button } from "./ui";
+import { apiFetch } from "@/lib/apiClient";
+import type { PermissionCode } from "@/lib/permissions";
 
 interface Props {
   children: ReactNode;
 }
 
-const navItems = [
-  { href: "/dashboard", label: "Dashboard" },
-  { href: "/satpam", label: "Satpam" },
-  { href: "/attendance-spots", label: "Attendance Spots" },
-  { href: "/shifts", label: "Shifts" },
-  { href: "/scheduling", label: "Scheduling" },
-  { href: "/spot-assignment", label: "Spot Assignment" },
-  { href: "/approvals", label: "Shift Swaps" },
-  { href: "/attendance", label: "Attendance Monitoring" },
-];
+const navItems: { href: string; label: string; perm: PermissionCode }[] = [
+  { href: "/dashboard", label: "Dashboard", perm: "DASHBOARD_VIEW" },
+  { href: "/admin", label: "Admin Management", perm: "ADMIN_VIEW" },
+  { href: "/satpam", label: "Satpam", perm: "SATPAM_VIEW" },
+  { href: "/attendance-spots", label: "Attendance Spots", perm: "ATTENDANCE_SPOT_VIEW" },
+  { href: "/shifts", label: "Shifts", perm: "SHIFT_VIEW" },
+  { href: "/scheduling", label: "Scheduling", perm: "SCHEDULING_VIEW" },
+  { href: "/spot-assignment", label: "Spot Assignment", perm: "SPOT_ASSIGNMENT_VIEW" },
+  { href: "/approvals", label: "Shift Swaps", perm: "SHIFT_SWAP_VIEW" },
+  { href: "/attendance", label: "Attendance Monitoring", perm: "ATTENDANCE_MONITORING_VIEW" },
+] as const;
 
 export function LayoutShell({ children }: Props) {
   const pathname = usePathname();
   const router = useRouter();
   const [loggedIn, setLoggedIn] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [permissions, setPermissions] = useState<PermissionCode[]>([]);
 
   useEffect(() => {
-    setLoggedIn(isAuthenticated());
-  }, []);
+    const init = async () => {
+      const authed = isAuthenticated();
+      setLoggedIn(authed);
+      if (!authed) {
+        setPermissions([]);
+        return;
+      }
+      try {
+        const me = await apiFetch<{
+          id: number;
+          name: string;
+          email: string;
+          role: string;
+          permissions: string[];
+        }>("/v1/admin/me");
+        const perms = (me.permissions || []) as PermissionCode[];
+        setPermissions(perms);
+      } catch {
+        // On error, leave permissions empty so nav hides items.
+        setPermissions([]);
+      }
+    };
+    void init();
+  }, [pathname]);
+
+  const canAccess = (code: PermissionCode) => {
+    const prefix = code.replace(/_(VIEW|MANAGE)$/, "");
+    const viewCode = `${prefix}_VIEW` as PermissionCode;
+    const manageCode = `${prefix}_MANAGE` as PermissionCode;
+    return permissions.includes(viewCode) || permissions.includes(manageCode);
+  };
 
   const isLoginPage = pathname === "/login";
 
@@ -51,15 +84,17 @@ export function LayoutShell({ children }: Props) {
           <span className="text-sm font-semibold tracking-tight">SIAGA CS</span>
         </div>
         <nav className="flex-1 space-y-1 px-3 py-4 text-sm">
-          {navItems.map((item) => (
-            <NavLink
-              key={item.href}
-              href={item.href}
-              label={item.label}
-              current={pathname}
-              onClick={() => setSidebarOpen(false)}
-            />
-          ))}
+          {navItems
+            .filter((item) => canAccess(item.perm))
+            .map((item) => (
+              <NavLink
+                key={item.href}
+                href={item.href}
+                label={item.label}
+                current={pathname}
+                onClick={() => setSidebarOpen(false)}
+              />
+            ))}
         </nav>
         {loggedIn && (
           <div className="border-t px-3 py-3">
@@ -96,15 +131,17 @@ export function LayoutShell({ children }: Props) {
               </button>
             </div>
             <nav className="space-y-1 px-3 py-4 text-sm">
-              {navItems.map((item) => (
-                <NavLink
-                  key={item.href}
-                  href={item.href}
-                  label={item.label}
-                  current={pathname}
-                  onClick={() => setSidebarOpen(false)}
-                />
-              ))}
+              {navItems
+                .filter((item) => canAccess(item.perm))
+                .map((item) => (
+                  <NavLink
+                    key={item.href}
+                    href={item.href}
+                    label={item.label}
+                    current={pathname}
+                    onClick={() => setSidebarOpen(false)}
+                  />
+                ))}
             </nav>
             {loggedIn && (
               <div className="border-t px-3 py-3">

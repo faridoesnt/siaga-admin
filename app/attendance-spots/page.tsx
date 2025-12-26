@@ -8,6 +8,7 @@ import { ApiError, AttendanceSpot } from "@/lib/types";
 import { Button, ConfirmModal, Modal } from "@/components/ui";
 import { showError, showSuccess } from "@/lib/toast";
 import { Pagination } from "@/components/pagination";
+import { canManage, canView } from "@/lib/permissions";
 
 interface CreateSpotForm {
   name: string;
@@ -40,6 +41,11 @@ export default function AttendanceSpotsPage() {
 
   useEffect(() => {
     if (!ready) return;
+    if (!canView("ATTENDANCE_SPOT")) {
+      showError("You do not have access to this page.");
+      router.replace("/dashboard");
+      return;
+    }
     const load = async () => {
       setLoading(true);
       setError(null);
@@ -67,6 +73,10 @@ export default function AttendanceSpotsPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!canManage("ATTENDANCE_SPOT")) {
+      setSubmitError("You do not have permission to manage attendance spots.");
+      return;
+    }
     setSubmitError(null);
     setSubmitting(true);
     try {
@@ -140,6 +150,10 @@ export default function AttendanceSpotsPage() {
     if (confirmDeleteId == null) return;
     const id = confirmDeleteId;
     setSubmitError(null);
+    if (!canManage("ATTENDANCE_SPOT")) {
+      setSubmitError("You do not have permission to delete attendance spots.");
+      return;
+    }
     try {
       await apiFetch(`/v1/admin/attendance-spots/${id}`, {
         method: "DELETE",
@@ -174,22 +188,24 @@ export default function AttendanceSpotsPage() {
             Define geofenced locations for attendance.
           </p>
         </div>
-        <Button
-          type="button"
-          size="sm"
-          onClick={() => {
-            setEditingId(null);
-            setForm({
-              name: "",
-              latitude: "",
-              longitude: "",
-              radius_meter: "",
-            });
-            setCreateOpen(true);
-          }}
-        >
-          + Add Spot
-        </Button>
+        {canManage("ATTENDANCE_SPOT") && (
+          <Button
+            type="button"
+            size="sm"
+            onClick={() => {
+              setEditingId(null);
+              setForm({
+                name: "",
+                latitude: "",
+                longitude: "",
+                radius_meter: "",
+              });
+              setCreateOpen(true);
+            }}
+          >
+            + Add Spot
+          </Button>
+        )}
       </div>
 
       <section className="rounded-lg border bg-white p-4 shadow-sm">
@@ -209,7 +225,9 @@ export default function AttendanceSpotsPage() {
                   <th className="px-3 py-2">Latitude</th>
                   <th className="px-3 py-2">Longitude</th>
                   <th className="px-3 py-2">Radius (m)</th>
-                  <th className="px-3 py-2">Actions</th>
+                  {canManage("ATTENDANCE_SPOT") && (
+                    <th className="px-3 py-2">Actions</th>
+                  )}
                 </tr>
               </thead>
               <tbody>
@@ -221,26 +239,28 @@ export default function AttendanceSpotsPage() {
                     <td className="px-3 py-2">{s.latitude}</td>
                     <td className="px-3 py-2">{s.longitude}</td>
                     <td className="px-3 py-2">{s.radius_meters}</td>
-                    <td className="px-3 py-2 space-x-2">
-                      <Button
-                        type="button"
-                        size="sm"
-                        variant="ghost"
-                        className="text-xs px-2 py-1"
-                        onClick={() => startEdit(s)}
-                      >
-                        Edit
-                      </Button>
-                      <Button
-                        type="button"
-                        size="sm"
-                        variant="danger"
-                        className="text-xs px-2 py-1"
-                        onClick={() => handleDelete(s.id)}
-                      >
-                        Delete
-                      </Button>
-                    </td>
+                    {canManage("ATTENDANCE_SPOT") && (
+                      <td className="px-3 py-2 space-x-2">
+                        <Button
+                          type="button"
+                          size="sm"
+                          variant="ghost"
+                          className="text-xs px-2 py-1"
+                          onClick={() => startEdit(s)}
+                        >
+                          Edit
+                        </Button>
+                        <Button
+                          type="button"
+                          size="sm"
+                          variant="danger"
+                          className="text-xs px-2 py-1"
+                          onClick={() => handleDelete(s.id)}
+                        >
+                          Delete
+                        </Button>
+                      </td>
+                    )}
                   </tr>
                 ))}
                 {spots.length === 0 && (

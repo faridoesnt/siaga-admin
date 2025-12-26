@@ -10,6 +10,7 @@ import { Pagination } from "@/components/pagination";
 import { Badge, Button, Modal } from "@/components/ui";
 import { showError, showSuccess } from "@/lib/toast";
 import { downloadApiFile } from "@/lib/download";
+import { canManage, canView } from "@/lib/permissions";
 
 const API_BASE_URL =
   process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:8686";
@@ -79,6 +80,11 @@ export default function AttendancePage() {
 
   useEffect(() => {
     if (!ready) return;
+    if (!canView("ATTENDANCE_MONITORING")) {
+      showError("You do not have access to this page.");
+      router.replace("/dashboard");
+      return;
+    }
     load(date);
     loadOpen();
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -95,6 +101,10 @@ export default function AttendancePage() {
   const handleExport = async () => {
     if (!rangeStart || !rangeEnd) {
       showError("Please select start and end dates for export.");
+      return;
+    }
+    if (!canManage("ATTENDANCE_MONITORING")) {
+      showError("You do not have permission to export attendance.");
       return;
     }
     try {
@@ -129,6 +139,10 @@ export default function AttendancePage() {
   const handleForceSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!forceItem) return;
+    if (!canManage("ATTENDANCE_MONITORING")) {
+      showError("You do not have permission to force clock-out.");
+      return;
+    }
     if (!forceReason.trim()) {
       showError("Reason is required.");
       return;
@@ -194,14 +208,16 @@ export default function AttendancePage() {
               onChange={(e) => setRangeEnd(e.target.value)}
               className="rounded-md border px-2 py-1.5 text-sm"
             />
-            <Button
-              type="button"
-              size="sm"
-              variant="secondary"
-              onClick={handleExport}
-            >
-              Export Attendance
-            </Button>
+            {canManage("ATTENDANCE_MONITORING") && (
+              <Button
+                type="button"
+                size="sm"
+                variant="secondary"
+                onClick={handleExport}
+              >
+                Export Attendance
+              </Button>
+            )}
           </div>
         </div>
       </div>
@@ -227,7 +243,9 @@ export default function AttendancePage() {
                   <th className="px-3 py-2">Late status</th>
                   <th className="px-3 py-2">Face verify</th>
                   <th className="px-3 py-2">Photos</th>
-                  <th className="px-3 py-2">Actions</th>
+                  {canManage("ATTENDANCE_MONITORING") && (
+                    <th className="px-3 py-2">Actions</th>
+                  )}
                 </tr>
               </thead>
               <tbody>
@@ -328,24 +346,26 @@ export default function AttendancePage() {
                         <span className="text-xs text-slate-400">-</span>
                       )}
                     </td>
-                    <td className="px-3 py-2">
-                      {isOpen ? (
-                        <Button
-                          type="button"
-                          size="sm"
-                          variant="danger"
-                          className="px-2 py-1 text-xs"
-                          onClick={() => {
-                            setForceItem(item);
-                            setForceReason("");
-                          }}
-                        >
-                          Force Clock-Out
-                        </Button>
-                      ) : (
-                        <span className="text-xs text-slate-400">-</span>
-                      )}
-                    </td>
+                    {canManage("ATTENDANCE_MONITORING") && (
+                      <td className="px-3 py-2">
+                        {isOpen ? (
+                          <Button
+                            type="button"
+                            size="sm"
+                            variant="danger"
+                            className="px-2 py-1 text-xs"
+                            onClick={() => {
+                              setForceItem(item);
+                              setForceReason("");
+                            }}
+                          >
+                            Force Clock-Out
+                          </Button>
+                        ) : (
+                          <span className="text-xs text-slate-400">-</span>
+                        )}
+                      </td>
+                    )}
                   </tr>
                 )})}
                 {items.length === 0 && (

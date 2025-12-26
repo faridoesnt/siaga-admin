@@ -27,7 +27,17 @@ export interface Satpam {
   id: number;
   email: string;
   name: string;
-  work_start_date?: string | null;
+  jabatan: string;
+  jenis_kelamin: "L" | "P";
+  tanggal_lahir?: string | null;
+  tempat_lahir?: string | null;
+  no_ktp?: string | null;
+  alamat: string;
+  no_telepon: string;
+  agama?: string | null;
+  status_pernikahan?: string | null;
+  kebangsaan?: string | null;
+  work_start_date: string;
   is_active: boolean;
 }
 

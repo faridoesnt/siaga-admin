@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useAuthGuard } from "@/lib/useAuthGuard";
 import { apiFetch } from "@/lib/apiClient";
+import { getToken } from "@/lib/auth";
 import {
   ApiError,
   Satpam,
@@ -14,6 +15,7 @@ import { Button, ConfirmModal, Modal } from "@/components/ui";
 import { showError, showSuccess } from "@/lib/toast";
 import { formatDate } from "@/lib/date";
 import { Pagination } from "@/components/pagination";
+import { canManage, canView } from "@/lib/permissions";
 
 interface FormState {
   user_id: string;
@@ -44,9 +46,26 @@ export default function SchedulingPage() {
   const [filterDate, setFilterDate] = useState<string>("");
   const [page, setPage] = useState(1);
   const pageSize = 10;
+  const [scheduleMonth, setScheduleMonth] = useState<number>(
+    new Date().getMonth() + 1
+  );
+  const [scheduleYear, setScheduleYear] = useState<number>(
+    new Date().getFullYear()
+  );
+  const [importOpen, setImportOpen] = useState(false);
+  const [importFile, setImportFile] = useState<File | null>(null);
+  const [importing, setImporting] = useState(false);
+  const [downloadOpen, setDownloadOpen] = useState(false);
+  const [downloadingTemplate, setDownloadingTemplate] = useState(false);
+  const [importResult, setImportResult] = useState<any | null>(null);
 
   useEffect(() => {
     if (!ready) return;
+    if (!canView("SCHEDULING")) {
+      showError("You do not have access to this page.");
+      router.replace("/dashboard");
+      return;
+    }
     const load = async () => {
       setLoading(true);
       setError(null);
@@ -78,6 +97,11 @@ export default function SchedulingPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setSubmitting(true);
+    if (!canManage("SCHEDULING")) {
+      showError("You do not have permission to manage scheduling.");
+      setSubmitting(false);
+      return;
+    }
     try {
       if (editingId != null) {
         await apiFetch(`/v1/admin/user-shifts/${editingId}`, {
@@ -140,6 +164,10 @@ export default function SchedulingPage() {
   const confirmDelete = async () => {
     if (confirmDeleteId == null) return;
     const id = confirmDeleteId;
+    if (!canManage("SCHEDULING")) {
+      showError("You do not have permission to delete scheduling.");
+      return;
+    }
     try {
       await apiFetch(`/v1/admin/user-shifts/${id}`, {
         method: "DELETE",
@@ -198,21 +226,51 @@ export default function SchedulingPage() {
             Assign shifts to satpam for specific dates.
           </p>
         </div>
-        <Button
-          type="button"
-          size="sm"
-          onClick={() => {
-            setEditingId(null);
-            setForm({
-              user_id: "",
-              shift_id: "",
-              shift_date: "",
-            });
-            setFormOpen(true);
-          }}
-        >
-          + Assign Shift
-        </Button>
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+          {canManage("SCHEDULING") && (
+            <div className="flex gap-2">
+              <Button
+                type="button"
+                size="sm"
+                variant="secondary"
+                onClick={() => {
+                  setDownloadOpen(true);
+                }}
+              >
+                Download Template
+              </Button>
+              <Button
+                type="button"
+                size="sm"
+                variant="secondary"
+                onClick={() => {
+                  setImportOpen(true);
+                  setImportResult(null);
+                  setImportFile(null);
+                }}
+              >
+                Import Jadwal
+              </Button>
+            </div>
+          )}
+          {canManage("SCHEDULING") && (
+            <Button
+              type="button"
+              size="sm"
+              onClick={() => {
+                setEditingId(null);
+                setForm({
+                  user_id: "",
+                  shift_id: "",
+                  shift_date: "",
+                });
+                setFormOpen(true);
+              }}
+            >
+              + Assign Shift
+            </Button>
+          )}
+        </div>
       </div>
 
       {error && (
@@ -270,7 +328,9 @@ export default function SchedulingPage() {
                 <th className="px-3 py-2">Date</th>
                 <th className="px-3 py-2">Satpam</th>
                 <th className="px-3 py-2">Shift</th>
-                <th className="px-3 py-2">Actions</th>
+                {canManage("SCHEDULING") && (
+                  <th className="px-3 py-2">Actions</th>
+                )}
               </tr>
             </thead>
               <tbody>
@@ -287,29 +347,31 @@ export default function SchedulingPage() {
                   <td className="px-3 py-2">
                     {it.shift_name} (#{it.shift_id})
                   </td>
-                  <td className="px-3 py-2 space-x-2">
-                    <Button
-                      type="button"
-                      size="sm"
-                      variant="ghost"
-                      className="px-2 py-1 text-xs"
-                      onClick={() => {
-                        startEdit(it);
-                        setFormOpen(true);
-                      }}
-                    >
-                      Edit
-                    </Button>
-                    <Button
-                      type="button"
-                      size="sm"
-                      variant="danger"
-                      className="px-2 py-1 text-xs"
-                      onClick={() => handleDelete(it.id)}
-                    >
-                      Delete
-                    </Button>
-                  </td>
+                  {canManage("SCHEDULING") && (
+                    <td className="px-3 py-2 space-x-2">
+                      <Button
+                        type="button"
+                        size="sm"
+                        variant="ghost"
+                        className="px-2 py-1 text-xs"
+                        onClick={() => {
+                          startEdit(it);
+                          setFormOpen(true);
+                        }}
+                      >
+                        Edit
+                      </Button>
+                      <Button
+                        type="button"
+                        size="sm"
+                        variant="danger"
+                        className="px-2 py-1 text-xs"
+                        onClick={() => handleDelete(it.id)}
+                      >
+                        Delete
+                      </Button>
+                    </td>
+                  )}
                 </tr>
               ))}
               {items.length === 0 && (
@@ -440,6 +502,263 @@ export default function SchedulingPage() {
         onCancel={() => setConfirmDeleteId(null)}
         onConfirm={confirmDelete}
       />
+
+      <Modal
+        open={downloadOpen}
+        onClose={() => {
+          if (!downloadingTemplate) {
+            setDownloadOpen(false);
+          }
+        }}
+        title="Download Scheduling Template"
+        size="md"
+      >
+        <form
+          onSubmit={async (e) => {
+            e.preventDefault();
+            if (!canManage("SCHEDULING")) {
+              showError("You do not have permission to download templates.");
+              return;
+            }
+            setDownloadingTemplate(true);
+            try {
+              const params = new URLSearchParams({
+                month: String(scheduleMonth),
+                year: String(scheduleYear),
+              });
+              const token = getToken();
+              const res = await fetch(
+                `${
+                  process.env.NEXT_PUBLIC_API_BASE_URL ||
+                  "http://localhost:8686"
+                }/v1/admin/scheduling/template?${params.toString()}`,
+                {
+                  headers: token
+                    ? {
+                        Authorization: `Bearer ${token}`,
+                      }
+                    : undefined,
+                }
+              );
+              if (!res.ok) {
+                throw new Error("Failed to download template");
+              }
+              const blob = await res.blob();
+              const url = URL.createObjectURL(blob);
+              const a = document.createElement("a");
+              a.href = url;
+              a.download = `SIAGA_Scheduling_Template_${scheduleYear}-${String(
+                scheduleMonth
+              ).padStart(2, "0")}.xlsx`;
+              document.body.appendChild(a);
+              a.click();
+              a.remove();
+              URL.revokeObjectURL(url);
+              showSuccess("Scheduling template downloaded.");
+              setDownloadOpen(false);
+            } catch (err) {
+              const msg =
+                err instanceof Error
+                  ? err.message
+                  : "Failed to download template";
+              showError(msg);
+            } finally {
+              setDownloadingTemplate(false);
+            }
+          }}
+          className="space-y-4"
+        >
+          <p className="text-xs text-slate-600">
+            Select month and year to generate the scheduling template. The file
+            will include all active satpam.
+          </p>
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+            <div className="flex items-center gap-2">
+              <label className="text-xs font-medium text-slate-600">
+                Month
+              </label>
+              <select
+                className="rounded-md border px-2 py-1.5 text-xs"
+                value={scheduleMonth}
+                onChange={(e) => setScheduleMonth(Number(e.target.value))}
+              >
+                {Array.from({ length: 12 }, (_, i) => i + 1).map((m) => (
+                  <option key={m} value={m}>
+                    {m.toString().padStart(2, "0")}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div className="flex items-center gap-2">
+              <label className="text-xs font-medium text-slate-600">
+                Year
+              </label>
+              <input
+                type="number"
+                className="w-20 rounded-md border px-2 py-1.5 text-xs"
+                value={scheduleYear}
+                onChange={(e) => setScheduleYear(Number(e.target.value))}
+              />
+            </div>
+          </div>
+          <div className="flex justify-end gap-2">
+            <Button
+              type="button"
+              size="sm"
+              variant="secondary"
+              onClick={() => {
+                if (!downloadingTemplate) {
+                  setDownloadOpen(false);
+                }
+              }}
+            >
+              Cancel
+            </Button>
+            <Button type="submit" size="sm" loading={downloadingTemplate}>
+              Download
+            </Button>
+          </div>
+        </form>
+      </Modal>
+
+      <Modal
+        open={importOpen}
+        onClose={() => {
+          setImportOpen(false);
+          setImportFile(null);
+          setImportResult(null);
+        }}
+        title="Import Scheduling"
+        size="lg"
+      >
+        <form
+          onSubmit={async (e) => {
+            e.preventDefault();
+            if (!importFile) {
+              showError("Please select an Excel (.xlsx) file.");
+              return;
+            }
+              setImporting(true);
+            try {
+              const formData = new FormData();
+              formData.append("file", importFile);
+              const token = getToken();
+              const res = await fetch(
+                `${
+                  process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:8686"
+                }/v1/admin/scheduling/import`,
+                {
+                  method: "POST",
+                  body: formData,
+                  headers: token
+                    ? {
+                        Authorization: `Bearer ${token}`,
+                      }
+                    : undefined,
+                }
+              );
+              const payload = await res.json();
+              if (!res.ok || !payload.success) {
+                const msg =
+                  payload?.error?.message ||
+                  "Failed to import scheduling from Excel";
+                showError(msg);
+                return;
+              }
+              setImportResult(payload.data);
+              showSuccess("Scheduling import completed.");
+              await loadItems();
+            } catch (err) {
+              const msg =
+                err instanceof Error
+                  ? err.message
+                  : "Failed to import scheduling from Excel";
+              showError(msg);
+            } finally {
+              setImporting(false);
+            }
+          }}
+          className="space-y-4"
+        >
+          <div className="space-y-2">
+            <p className="text-xs text-slate-600">
+              Upload the filled scheduling template (.xlsx). Only shift codes
+              that are listed in the KET section of the template are allowed in
+              the day columns.
+            </p>
+            <input
+              type="file"
+              accept=".xlsx"
+              onChange={(e) => {
+                const file = e.target.files?.[0] ?? null;
+                setImportFile(file);
+              }}
+              className="text-xs"
+            />
+          </div>
+          <div className="flex justify-end gap-2">
+            <Button
+              type="button"
+              size="sm"
+              variant="secondary"
+              onClick={() => {
+                setImportOpen(false);
+                setImportFile(null);
+                setImportResult(null);
+              }}
+            >
+              Cancel
+            </Button>
+            <Button type="submit" size="sm" loading={importing}>
+              Import
+            </Button>
+          </div>
+        </form>
+
+        {importResult && (
+          <div className="mt-4 space-y-3">
+            <h4 className="text-xs font-semibold text-slate-700">
+              Import Summary
+            </h4>
+            <div className="grid grid-cols-2 gap-2 text-xs">
+              <p>Processed rows: {importResult.processed_rows}</p>
+              <p>Processed cells: {importResult.processed_cells}</p>
+              <p>Inserted: {importResult.inserted}</p>
+              <p>Updated: {importResult.updated}</p>
+              <p>Skipped: {importResult.skipped}</p>
+            </div>
+            {importResult.errors && importResult.errors.length > 0 && (
+              <div className="mt-2">
+                <h5 className="mb-1 text-xs font-semibold text-red-700">
+                  Errors
+                </h5>
+                <div className="max-h-56 overflow-y-auto">
+                  <table className="min-w-full text-left text-[11px]">
+                    <thead className="border-b bg-red-50 text-[10px] font-medium text-red-700">
+                      <tr>
+                        <th className="px-2 py-1">Satpam</th>
+                        <th className="px-2 py-1">Date</th>
+                        <th className="px-2 py-1">Value</th>
+                        <th className="px-2 py-1">Reason</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {importResult.errors.map((err: any, idx: number) => (
+                        <tr key={idx} className="border-b last:border-0">
+                          <td className="px-2 py-1">{err.satpam_name}</td>
+                          <td className="px-2 py-1">{err.date}</td>
+                          <td className="px-2 py-1">{err.value}</td>
+                          <td className="px-2 py-1">{err.reason}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+      </Modal>
     </div>
   );
 }

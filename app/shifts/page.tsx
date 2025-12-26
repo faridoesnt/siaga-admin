@@ -10,6 +10,7 @@ import { showError, showSuccess } from "@/lib/toast";
 import { Pagination } from "@/components/pagination";
 import { downloadApiFile } from "@/lib/download";
 import { getToken, clearToken } from "@/lib/auth";
+import { canManage, canView } from "@/lib/permissions";
 
 const API_BASE_URL =
   process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:8686";
@@ -50,6 +51,11 @@ export default function ShiftsPage() {
 
   useEffect(() => {
     if (!ready) return;
+    if (!canView("SHIFT")) {
+      showError("You do not have access to this page.");
+      router.replace("/dashboard");
+      return;
+    }
     const load = async () => {
       setLoading(true);
       setError(null);
@@ -74,6 +80,10 @@ export default function ShiftsPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setSubmitError(null);
+    if (!canManage("SHIFT")) {
+      setSubmitError("You do not have permission to manage shifts.");
+      return;
+    }
     setSubmitting(true);
     try {
       const payload = {
@@ -151,6 +161,10 @@ export default function ShiftsPage() {
     if (confirmDeleteId == null) return;
     const id = confirmDeleteId;
     setSubmitError(null);
+    if (!canManage("SHIFT")) {
+      setSubmitError("You do not have permission to delete shifts.");
+      return;
+    }
     try {
       await apiFetch(`/v1/admin/shifts/${id}`, {
         method: "DELETE",
@@ -173,6 +187,10 @@ export default function ShiftsPage() {
   };
 
   const handleDownloadTemplate = async () => {
+    if (!canManage("SHIFT")) {
+      showError("You do not have permission to manage shifts.");
+      return;
+    }
     try {
       await downloadApiFile(
         "/v1/admin/import-templates/shifts",
@@ -198,6 +216,10 @@ export default function ShiftsPage() {
     e.preventDefault();
     if (!importFile) {
       setImportError("Please select an Excel (.xlsx) file.");
+      return;
+    }
+    if (!canManage("SHIFT")) {
+      setImportError("You do not have permission to manage shifts.");
       return;
     }
     setImporting(true);
@@ -268,41 +290,45 @@ export default function ShiftsPage() {
           </p>
         </div>
         <div className="flex flex-col gap-2 sm:flex-row">
-          <Button
-            type="button"
-            size="sm"
-            variant="secondary"
-            onClick={handleDownloadTemplate}
-          >
-            Download Template
-          </Button>
-          <Button
-            type="button"
-            size="sm"
-            variant="secondary"
-            onClick={() => {
-              setImportOpen(true);
-              setImportError(null);
-            }}
-          >
-            Import from Excel
-          </Button>
-          <Button
-            type="button"
-            size="sm"
-            onClick={() => {
-              setEditingId(null);
-              setForm({
-                name: "",
-                start_time: "",
-                end_time: "",
-                late_tolerance_minute: "10",
-              });
-              setCreateOpen(true);
-            }}
-          >
-            + Add Shift
-          </Button>
+          {canManage("SHIFT") && (
+            <>
+              <Button
+                type="button"
+                size="sm"
+                variant="secondary"
+                onClick={handleDownloadTemplate}
+              >
+                Download Template
+              </Button>
+              <Button
+                type="button"
+                size="sm"
+                variant="secondary"
+                onClick={() => {
+                  setImportOpen(true);
+                  setImportError(null);
+                }}
+              >
+                Import from Excel
+              </Button>
+              <Button
+                type="button"
+                size="sm"
+                onClick={() => {
+                  setEditingId(null);
+                  setForm({
+                    name: "",
+                    start_time: "",
+                    end_time: "",
+                    late_tolerance_minute: "10",
+                  });
+                  setCreateOpen(true);
+                }}
+              >
+                + Add Shift
+              </Button>
+            </>
+          )}
         </div>
       </div>
 
@@ -323,7 +349,9 @@ export default function ShiftsPage() {
                   <th className="px-3 py-2">Start</th>
                   <th className="px-3 py-2">End</th>
                   <th className="px-3 py-2">Late tolerance</th>
-                  <th className="px-3 py-2">Actions</th>
+                  {canManage("SHIFT") && (
+                    <th className="px-3 py-2">Actions</th>
+                  )}
                 </tr>
               </thead>
               <tbody>
@@ -337,26 +365,28 @@ export default function ShiftsPage() {
                     <td className="px-3 py-2">
                       {s.late_tolerance_minute} min
                     </td>
-                    <td className="px-3 py-2 space-x-2">
-                      <Button
-                        type="button"
-                        size="sm"
-                        variant="ghost"
-                        className="text-xs px-2 py-1"
-                        onClick={() => startEdit(s)}
-                      >
-                        Edit
-                      </Button>
-                      <Button
-                        type="button"
-                        size="sm"
-                        variant="danger"
-                        className="text-xs px-2 py-1"
-                        onClick={() => handleDelete(s.id)}
-                      >
-                        Delete
-                      </Button>
-                    </td>
+                    {canManage("SHIFT") && (
+                      <td className="px-3 py-2 space-x-2">
+                        <Button
+                          type="button"
+                          size="sm"
+                          variant="ghost"
+                          className="text-xs px-2 py-1"
+                          onClick={() => startEdit(s)}
+                        >
+                          Edit
+                        </Button>
+                        <Button
+                          type="button"
+                          size="sm"
+                          variant="danger"
+                          className="text-xs px-2 py-1"
+                          onClick={() => handleDelete(s.id)}
+                        >
+                          Delete
+                        </Button>
+                      </td>
+                    )}
                   </tr>
                 ))}
                 {shifts.length === 0 && (
