@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, useRef } from "react";
+import { createPortal } from "react-dom";
 import { useRouter } from "next/navigation";
 import { useAuthGuard } from "@/lib/useAuthGuard";
 import { apiFetch } from "@/lib/apiClient";
@@ -119,7 +120,7 @@ export default function SatpamPage() {
   const [resetPassword, setResetPassword] = useState("");
   const [resetLoading, setResetLoading] = useState(false);
   const [viewSatpam, setViewSatpam] = useState<Satpam | null>(null);
-  const [actionMenuFor, setActionMenuFor] = useState<number | null>(null);
+  const [actionMenuState, setActionMenuState] = useState<ActionMenuState>(null);
 
   const toInputDate = (value?: string | null): string => {
     if (!value) return "";
@@ -139,17 +140,14 @@ export default function SatpamPage() {
     return value;
   };
 
-  // Close action dropdown when clicking anywhere outside the actions cell.
-  useEffect(() => {
-    if (actionMenuFor === null) return;
-    const handleClickOutside = () => {
-      setActionMenuFor(null);
-    };
-    document.addEventListener("click", handleClickOutside);
-    return () => {
-      document.removeEventListener("click", handleClickOutside);
-    };
-  }, [actionMenuFor]);
+  const openActionMenu = (user: Satpam, buttonEl: HTMLButtonElement) => {
+    const rect = buttonEl.getBoundingClientRect();
+    setActionMenuState({ satpam: user, rect });
+  };
+
+  const closeActionMenu = () => {
+    setActionMenuState(null);
+  };
 
   useEffect(() => {
     if (!ready) return;
@@ -782,131 +780,72 @@ export default function SatpamPage() {
                 </tr>
               </thead>
               <tbody>
-                {paged.map((s, rowIndex) => (
-                  <tr key={s.id} className="border-b last:border-0">
-                    <td className="px-3 py-2">{s.name}</td>
-                    <td className="px-3 py-2">{s.email}</td>
-                    <td className="px-3 py-2">
-                      {s.jabatan}
-                    </td>
-                    <td className="px-3 py-2">
-                      {s.jenis_kelamin === "L" ? "Laki-laki" : "Perempuan"}
-                    </td>
-                    <td className="px-3 py-2">{s.no_telepon}</td>
-                    <td className="px-3 py-2">
-                      {s.work_start_date ? (
-                        formatDate(s.work_start_date)
-                      ) : (
-                        <span className="text-slate-400">-</span>
-                      )}
-                    </td>
-                    <td className="px-3 py-2">
-                      <Badge variant={s.is_active ? "success" : "muted"}>
-                        {s.is_active ? "Active" : "Inactive"}
-                      </Badge>
-                    </td>
-                    {showActionsColumn && (
-                      <td
-                        className="px-3 py-2"
-                        onClick={(e) => {
-                          // Prevent closing the dropdown when clicking inside the cell.
-                          e.stopPropagation();
-                        }}
-                      >
-                        <div className="flex items-center gap-2">
-                          {canViewSatpam && (
-                            <Button
-                              type="button"
-                              size="sm"
-                              variant="ghost"
-                              className="px-2 py-1 text-xs"
-                              onClick={() => setViewSatpam(s)}
-                            >
-                              View
-                            </Button>
-                          )}
-                          {canManageSatpam && (
-                            <div className="relative">
+                {paged.map((s, rowIndex) => {
+                  return (
+                    <tr key={s.id} className="border-b last:border-0">
+                      <td className="px-3 py-2">{s.name}</td>
+                      <td className="px-3 py-2">{s.email}</td>
+                      <td className="px-3 py-2">{s.jabatan}</td>
+                      <td className="px-3 py-2">
+                        {s.jenis_kelamin === "L" ? "Laki-laki" : "Perempuan"}
+                      </td>
+                      <td className="px-3 py-2">{s.no_telepon}</td>
+                      <td className="px-3 py-2">
+                        {s.work_start_date ? (
+                          formatDate(s.work_start_date)
+                        ) : (
+                          <span className="text-slate-400">-</span>
+                        )}
+                      </td>
+                      <td className="px-3 py-2">
+                        <Badge variant={s.is_active ? "success" : "muted"}>
+                          {s.is_active ? "Active" : "Inactive"}
+                        </Badge>
+                      </td>
+                      {showActionsColumn && (
+                        <td
+                          className="px-3 py-2"
+                          onClick={(e) => {
+                            // Prevent other click handlers on row.
+                            e.stopPropagation();
+                          }}
+                        >
+                          <div className="flex items-center gap-2">
+                            {canViewSatpam && (
+                              <Button
+                                type="button"
+                                size="sm"
+                                variant="ghost"
+                                className="px-2 py-1 text-xs"
+                                onClick={() => setViewSatpam(s)}
+                              >
+                                View
+                              </Button>
+                            )}
+                            {canManageSatpam && (
+                              <div className="relative">
                               <Button
                                 type="button"
                                 size="sm"
                                 variant="secondary"
                                 className="px-2 py-1 text-xs"
-                                onClick={() =>
-                                  setActionMenuFor((prev) =>
-                                    prev === s.id ? null : s.id
+                                onClick={(e) =>
+                                  openActionMenu(
+                                    s,
+                                    e.currentTarget as HTMLButtonElement
                                   )
                                 }
                               >
                                 More
                               </Button>
-                              {actionMenuFor === s.id && (
-                                <div
-                                  className={`absolute right-0 z-10 w-44 rounded-md border bg-white py-1 text-xs shadow-lg ${
-                                    rowIndex >= paged.length - 2
-                                      ? "bottom-full mb-1"
-                                      : "mt-1"
-                                  }`}
-                                >
-                                  <button
-                                    type="button"
-                                    className="flex w-full items-center px-3 py-1.5 text-left hover:bg-slate-50"
-                                    onClick={() => {
-                                      setActionMenuFor(null);
-                                      startEdit(s);
-                                    }}
-                                  >
-                                    Edit
-                                  </button>
-                                  <button
-                                    type="button"
-                                    className="flex w-full items-center px-3 py-1.5 text-left hover:bg-slate-50"
-                                    onClick={() => {
-                                      setActionMenuFor(null);
-                                      handleResetPassword(s);
-                                    }}
-                                  >
-                                    Reset password
-                                  </button>
-                                  <button
-                                    type="button"
-                                    className="flex w-full items-center px-3 py-1.5 text-left hover:bg-slate-50"
-                                    onClick={() => {
-                                      setActionMenuFor(null);
-                                      toggleActive(s);
-                                    }}
-                                  >
-                                    {s.is_active ? "Disable" : "Enable"}
-                                  </button>
-                                  <button
-                                    type="button"
-                                    className="flex w-full items-center px-3 py-1.5 text-left hover:bg-slate-50"
-                                    onClick={() => {
-                                      setActionMenuFor(null);
-                                      openEnroll(s);
-                                    }}
-                                  >
-                                    Enroll face
-                                  </button>
-                                  <button
-                                    type="button"
-                                    className="flex w-full items-center px-3 py-1.5 text-left text-red-600 hover:bg-red-50"
-                                    onClick={() => {
-                                      setActionMenuFor(null);
-                                      handleDelete(s);
-                                    }}
-                                  >
-                                    Delete
-                                  </button>
-                                </div>
-                              )}
                             </div>
                           )}
                         </div>
-                      </td>
-                    )}
-                  </tr>
-               ))}
+                        </td>
+                      )}
+                    </tr>
+                  );
+                })}
                 {filtered.length === 0 && (
                   <tr>
                     <td
@@ -928,6 +867,33 @@ export default function SatpamPage() {
           onPageChange={setPage}
         />
       </section>
+
+      {canManageSatpam && (
+        <SatpamActionMenuPortal
+          state={actionMenuState}
+          onClose={closeActionMenu}
+          onEdit={(s) => {
+            closeActionMenu();
+            startEdit(s);
+          }}
+          onResetPassword={(s) => {
+            closeActionMenu();
+            handleResetPassword(s);
+          }}
+          onToggleActive={(s) => {
+            closeActionMenu();
+            toggleActive(s);
+          }}
+          onEnroll={(s) => {
+            closeActionMenu();
+            openEnroll(s);
+          }}
+          onDelete={(s) => {
+            closeActionMenu();
+            handleDelete(s);
+          }}
+        />
+      )}
 
       {viewSatpam && (
         <Modal
@@ -1591,4 +1557,159 @@ export default function SatpamPage() {
       </Modal>
     </div>
   );
+}
+
+type ActionMenuState = {
+  satpam: Satpam;
+  rect: DOMRect;
+} | null;
+
+type SatpamActionMenuPortalProps = {
+  state: ActionMenuState;
+  onClose: () => void;
+  onEdit: (s: Satpam) => void;
+  onResetPassword: (s: Satpam) => void;
+  onToggleActive: (s: Satpam) => void;
+  onEnroll: (s: Satpam) => void;
+  onDelete: (s: Satpam) => void;
+};
+
+function SatpamActionMenuPortal({
+  state,
+  onClose,
+  onEdit,
+  onResetPassword,
+  onToggleActive,
+  onEnroll,
+  onDelete,
+}: SatpamActionMenuPortalProps) {
+  const menuRef = useRef<HTMLDivElement | null>(null);
+  const [position, setPosition] = useState<{ top: number; left: number } | null>(
+    null
+  );
+  const [direction, setDirection] = useState<"up" | "down">("down");
+
+  useEffect(() => {
+    if (!state) return;
+    const computePosition = () => {
+      if (!menuRef.current) return;
+      const menuEl = menuRef.current;
+      const dropdownHeight = menuEl.offsetHeight || 0;
+      const dropdownWidth = menuEl.offsetWidth || 0;
+      const viewportHeight = window.innerHeight || 0;
+      const viewportWidth = window.innerWidth || 0;
+      const scrollY = window.scrollY || window.pageYOffset || 0;
+      const scrollX = window.scrollX || window.pageXOffset || 0;
+
+      const triggerRect = state.rect;
+      const spaceBelow = viewportHeight - triggerRect.bottom;
+
+      // Two-phase positioning: decide open direction based on measured height.
+      const openDown = spaceBelow >= dropdownHeight + 8;
+      // DIRECTION_APPLIED: up | down
+      const appliedDirection: "up" | "down" = openDown ? "down" : "up";
+
+      const baseLeft = triggerRect.left + scrollX;
+      const downTop = triggerRect.bottom + scrollY + 6;
+      const upTop = triggerRect.top + scrollY - dropdownHeight - 6;
+
+      let leftPos = baseLeft;
+      let topPos = appliedDirection === "down" ? downTop : upTop;
+
+      const maxLeft = scrollX + viewportWidth - dropdownWidth - 8;
+      const minLeft = scrollX + 8;
+      if (leftPos > maxLeft) leftPos = maxLeft;
+      if (leftPos < minLeft) leftPos = minLeft;
+
+      setPosition({ top: topPos, left: leftPos });
+      setDirection(appliedDirection);
+    };
+
+    const handleClick = (e: MouseEvent) => {
+      if (!menuRef.current) return;
+      if (!menuRef.current.contains(e.target as Node)) {
+        onClose();
+      }
+    };
+    const handleKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        onClose();
+      }
+    };
+    document.addEventListener("mousedown", handleClick);
+    document.addEventListener("keydown", handleKey);
+    window.addEventListener("resize", computePosition);
+    const scrollHandler = () => {
+      computePosition();
+    };
+    window.addEventListener("scroll", scrollHandler, { passive: true });
+
+    // Initial compute after mount.
+    computePosition();
+    return () => {
+      document.removeEventListener("mousedown", handleClick);
+      document.removeEventListener("keydown", handleKey);
+      window.removeEventListener("resize", computePosition);
+      window.removeEventListener("scroll", scrollHandler);
+    };
+  }, [state, onClose]);
+
+  if (!state) return null;
+  if (typeof document === "undefined") return null;
+
+  const { satpam } = state;
+
+  const style: React.CSSProperties = {
+    position: "absolute",
+    top: position ? position.top : state.rect.bottom + window.scrollY + 6,
+    left: position ? position.left : state.rect.left + window.scrollX,
+    zIndex: 1000,
+    visibility: position ? "visible" : "hidden",
+  };
+
+  const menu = (
+    <div
+      ref={menuRef}
+      style={style}
+      className="w-44 rounded-md border bg-white py-1 text-xs shadow-lg"
+    >
+      <button
+        type="button"
+        className="flex w-full items-center px-3 py-1.5 text-left hover:bg-slate-50"
+        onClick={() => onEdit(satpam)}
+      >
+        Edit
+      </button>
+      <button
+        type="button"
+        className="flex w-full items-center px-3 py-1.5 text-left hover:bg-slate-50"
+        onClick={() => onResetPassword(satpam)}
+      >
+        Reset password
+      </button>
+      <button
+        type="button"
+        className="flex w-full items-center px-3 py-1.5 text-left hover:bg-slate-50"
+        onClick={() => onToggleActive(satpam)}
+      >
+        {satpam.is_active ? "Disable" : "Enable"}
+      </button>
+      <button
+        type="button"
+        className="flex w-full items-center px-3 py-1.5 text-left hover:bg-slate-50"
+        onClick={() => onEnroll(satpam)}
+      >
+        Enroll face
+      </button>
+      <button
+        type="button"
+        className="flex w-full items-center px-3 py-1.5 text-left text-red-600 hover:bg-red-50"
+        onClick={() => onDelete(satpam)}
+      >
+        Delete
+      </button>
+    </div>
+  );
+
+  return createPortal(menu, document.body);
 }
