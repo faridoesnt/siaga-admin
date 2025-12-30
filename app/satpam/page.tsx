@@ -105,6 +105,17 @@ export default function SatpamPage() {
   const [enrollError, setEnrollError] = useState<string | null>(null);
   const [enrollSuccess, setEnrollSuccess] = useState<string | null>(null);
   const [enrollStatus, setEnrollStatus] = useState<FaceEnrollStatus | null>(null);
+  const [cameraOpen, setCameraOpen] = useState(false);
+  const [cameraCaptures, setCameraCaptures] = useState<string[]>([]);
+  const [cameraError, setCameraError] = useState<string | null>(null);
+  const videoRef = useRef<HTMLVideoElement | null>(null);
+  const streamRef = useRef<MediaStream | null>(null);
+
+  useEffect(() => {
+    if (cameraOpen && videoRef.current && streamRef.current) {
+      videoRef.current.srcObject = streamRef.current;
+    }
+  }, [cameraOpen]);
   const [createOpen, setCreateOpen] = useState(false);
   const [confirmState, setConfirmState] = useState<{
     type: "toggle" | "delete" | "deleteEnroll" | "resetPassword" | null;
@@ -567,6 +578,9 @@ export default function SatpamPage() {
     setEnrollError(null);
     setEnrollSuccess(null);
     setEnrollStatus(null);
+    setCameraCaptures([]);
+    setCameraError(null);
+    stopCamera();
   };
 
   const handleEnrollFilesChange = (
@@ -594,11 +608,63 @@ export default function SatpamPage() {
     });
   };
 
+  const stopCamera = () => {
+    const stream = streamRef.current;
+    if (stream) {
+      stream.getTracks().forEach((track) => track.stop());
+      streamRef.current = null;
+    }
+    if (videoRef.current) {
+      videoRef.current.srcObject = null;
+    }
+    setCameraOpen(false);
+  };
+
+  const startCamera = async () => {
+    setCameraError(null);
+    if (typeof navigator === "undefined" || !navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+      setCameraError("Camera is not supported in this browser.");
+      return;
+    }
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+      streamRef.current = stream;
+      setCameraOpen(true);
+    } catch (err) {
+      const msg =
+        err instanceof Error ? err.message : "Failed to access camera.";
+      setCameraError(msg);
+      setCameraOpen(false);
+    }
+  };
+
+  const captureFromCamera = () => {
+    const video = videoRef.current;
+    if (!video) {
+      setCameraError("Camera is not ready.");
+      return;
+    }
+    const width = video.videoWidth || 640;
+    const height = video.videoHeight || 480;
+    const canvas = document.createElement("canvas");
+    canvas.width = width;
+    canvas.height = height;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) {
+      setCameraError("Unable to capture frame.");
+      return;
+    }
+    ctx.drawImage(video, 0, 0, width, height);
+    const dataUrl = canvas.toDataURL("image/jpeg", 0.9);
+    setCameraCaptures((prev) => [...prev, dataUrl]);
+    setCameraError(null);
+  };
+
   const handleEnrollSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!enrollUser) return;
-    if (enrollFiles.length === 0) {
-      setEnrollError("Please select at least one photo.");
+    if (enrollFiles.length === 0 && cameraCaptures.length === 0) {
+      setEnrollError("Please select or capture at least one photo.");
       return;
     }
     setEnrollError(null);
@@ -610,6 +676,7 @@ export default function SatpamPage() {
         // only basic image validation here; BE will validate faces
         images.push(await fileToBase64(f));
       }
+      images.push(...cameraCaptures);
       await apiFetch("/v1/admin/face-enroll", {
         method: "POST",
         body: JSON.stringify({
@@ -1353,7 +1420,7 @@ export default function SatpamPage() {
           open={!!enrollUser}
           onClose={closeEnroll}
           title={`Enroll Face — ${enrollUser.name}`}
-          size="md"
+          size="lg"
         >
             <form onSubmit={handleEnrollSubmit} className="space-y-3">
               <p className="text-xs text-slate-600">
@@ -1370,18 +1437,86 @@ export default function SatpamPage() {
                     : "Not enrolled"}
                 </p>
               )}
-              <input
-                type="file"
-                accept="image/*"
-                multiple
-                onChange={handleEnrollFilesChange}
-                className="w-full text-xs"
-              />
-              {enrollFiles.length > 0 && (
-                <p className="text-[11px] text-slate-500">
-                  Selected {enrollFiles.length} file
-                  {enrollFiles.length > 1 ? "s" : ""}.
-                </p>
+              <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
+                <div className="flex-1">
+                  <label className="block text-[11px] font-medium text-slate-700">
+                    Upload photos
+                    <input
+                      type="file"
+                      accept="image/*"
+                      multiple
+                      onChange={handleEnrollFilesChange}
+                      className="mt-1 w-full text-xs"
+                    />
+                  </label>
+                  {enrollFiles.length > 0 && (
+                    <p className="mt-1 text-[11px] text-slate-500">
+                      Selected {enrollFiles.length} file
+                      {enrollFiles.length > 1 ? "s" : ""}.
+                    </p>
+                  )}
+                </div>
+                <div className="flex items-center gap-2 md:flex-none">
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="secondary"
+                    onClick={() => {
+                      if (cameraOpen) {
+                        stopCamera();
+                      } else {
+                        void startCamera();
+                      }
+                    }}
+                  >
+                    {cameraOpen ? "Close Camera" : "Open Camera"}
+                  </Button>
+                </div>
+              </div>
+              {cameraOpen && (
+                <div className="mt-2 space-y-2">
+                  <div className="overflow-hidden rounded-md border bg-black">
+                    <video
+                      ref={videoRef}
+                      autoPlay
+                      playsInline
+                      className="h-80 md:h-[32rem] w-full object-cover"
+                    />
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <p className="text-[11px] text-slate-500">
+                      Use the laptop camera to capture the guard&apos;s face.
+                    </p>
+                    <Button
+                      type="button"
+                      size="sm"
+                      onClick={captureFromCamera}
+                    >
+                      Capture
+                    </Button>
+                  </div>
+                </div>
+              )}
+              {cameraCaptures.length > 0 && (
+                <div className="mt-2">
+                  <p className="mb-1 text-[11px] font-medium text-slate-700">
+                    Captured photos
+                  </p>
+                  <div className="flex flex-wrap gap-2">
+                    {cameraCaptures.map((src, idx) => (
+                      <div key={idx} className="relative">
+                        <img
+                          src={src}
+                          alt={`Capture ${idx + 1}`}
+                          className="h-16 w-16 rounded-md border object-cover"
+                        />
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+              {cameraError && (
+                <p className="text-xs text-red-600">{cameraError}</p>
               )}
               {enrollError && (
                 <p className="text-xs text-red-600">{enrollError}</p>
