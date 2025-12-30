@@ -58,6 +58,19 @@ export default function SchedulingPage() {
   const [downloadOpen, setDownloadOpen] = useState(false);
   const [downloadingTemplate, setDownloadingTemplate] = useState(false);
   const [importResult, setImportResult] = useState<any | null>(null);
+  const [viewMode, setViewMode] = useState<"table" | "calendar">("table");
+  const now = new Date();
+  const [calendarMonth, setCalendarMonth] = useState<number>(
+    now.getMonth() + 1
+  );
+  const [calendarYear, setCalendarYear] = useState<number>(
+    now.getFullYear()
+  );
+  const [dayDetailOpen, setDayDetailOpen] = useState(false);
+  const [dayDetailDate, setDayDetailDate] = useState<string | null>(null);
+  const [dayDetailItems, setDayDetailItems] = useState<AdminUserShiftItem[]>(
+    []
+  );
 
   useEffect(() => {
     if (!ready) return;
@@ -280,119 +293,196 @@ export default function SchedulingPage() {
       )}
 
       <section className="rounded-lg border bg-white p-4 shadow-sm">
-        <div className="mb-3 flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
-          <h3 className="text-sm font-semibold text-slate-700">Assigned Shifts</h3>
-          <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
-            <div className="flex items-center gap-2">
-              <label className="text-xs font-medium text-slate-600">
-                Filter date
-              </label>
-              <input
-                type="date"
-                className="rounded-md border px-2 py-1.5 text-sm"
-                value={filterDate}
-                onChange={(e) => setFilterDate(e.target.value)}
-              />
-            </div>
-            <div className="flex gap-2">
-              <Button
+        <div className="mb-3 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+          <div className="flex items-center gap-3">
+            <h3 className="text-sm font-semibold text-slate-700">
+              Assigned Shifts
+            </h3>
+            <div className="inline-flex overflow-hidden rounded-md border bg-slate-50 text-xs">
+              <button
                 type="button"
-                size="sm"
-                variant="secondary"
-                onClick={() => {
-                  void loadItems();
-                }}
+                className={`px-3 py-1.5 ${
+                  viewMode === "table"
+                    ? "bg-white text-slate-900"
+                    : "text-slate-500"
+                }`}
+                onClick={() => setViewMode("table")}
               >
-                Apply
-              </Button>
-              {filterDate && (
+                Table
+              </button>
+              <button
+                type="button"
+                className={`px-3 py-1.5 border-l ${
+                  viewMode === "calendar"
+                    ? "bg-white text-slate-900"
+                    : "text-slate-500"
+                }`}
+                onClick={() => setViewMode("calendar")}
+              >
+                Calendar
+              </button>
+            </div>
+          </div>
+          {viewMode === "table" && (
+            <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+              <div className="flex items-center gap-2">
+                <label className="text-xs font-medium text-slate-600">
+                  Filter date
+                </label>
+                <input
+                  type="date"
+                  className="rounded-md border px-2 py-1.5 text-sm"
+                  value={filterDate}
+                  onChange={(e) => setFilterDate(e.target.value)}
+                />
+              </div>
+              <div className="flex gap-2">
                 <Button
                   type="button"
                   size="sm"
-                  variant="ghost"
+                  variant="secondary"
                   onClick={() => {
-                    setFilterDate("");
-                    void loadItems("");
+                    void loadItems();
                   }}
                 >
-                  Clear
+                  Apply
                 </Button>
-              )}
-            </div>
-          </div>
-        </div>
-        <div className="overflow-x-auto">
-          <table className="min-w-full text-left text-sm">
-            <thead className="border-b bg-slate-50 text-xs font-medium uppercase text-slate-500">
-              <tr>
-                <th className="px-3 py-2">Date</th>
-                <th className="px-3 py-2">Satpam</th>
-                <th className="px-3 py-2">Shift</th>
-                {canManage("SCHEDULING") && (
-                  <th className="px-3 py-2">Actions</th>
-                )}
-              </tr>
-            </thead>
-              <tbody>
-              {items
-                .slice((page - 1) * pageSize, page * pageSize)
-                .map((it) => (
-                <tr key={it.id} className="border-b last:border-0">
-                  <td className="px-3 py-2">
-                    {formatDate(it.shift_date)}
-                  </td>
-                  <td className="px-3 py-2">
-                    {it.user_name} (#{it.user_id})
-                  </td>
-                  <td className="px-3 py-2">
-                    {it.shift_name} (#{it.shift_id})
-                  </td>
-                  {canManage("SCHEDULING") && (
-                    <td className="px-3 py-2 space-x-2">
-                      <Button
-                        type="button"
-                        size="sm"
-                        variant="ghost"
-                        className="px-2 py-1 text-xs"
-                        onClick={() => {
-                          startEdit(it);
-                          setFormOpen(true);
-                        }}
-                      >
-                        Edit
-                      </Button>
-                      <Button
-                        type="button"
-                        size="sm"
-                        variant="danger"
-                        className="px-2 py-1 text-xs"
-                        onClick={() => handleDelete(it.id)}
-                      >
-                        Delete
-                      </Button>
-                    </td>
-                  )}
-                </tr>
-              ))}
-              {items.length === 0 && (
-                <tr>
-                  <td
-                    colSpan={4}
-                    className="px-3 py-3 text-center text-sm text-slate-500"
+                {filterDate && (
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="ghost"
+                    onClick={() => {
+                      setFilterDate("");
+                      void loadItems("");
+                    }}
                   >
-                    No shifts assigned.
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
+                    Clear
+                  </Button>
+                )}
+              </div>
+            </div>
+          )}
+          {viewMode === "calendar" && (
+            <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+              <div className="flex items-center gap-2">
+                <label className="text-xs font-medium text-slate-600">
+                  Month
+                </label>
+                <select
+                  className="rounded-md border px-2 py-1.5 text-xs"
+                  value={calendarMonth}
+                  onChange={(e) => setCalendarMonth(Number(e.target.value))}
+                >
+                  {Array.from({ length: 12 }, (_, i) => i + 1).map((m) => (
+                    <option key={m} value={m}>
+                      {m.toString().padStart(2, "0")}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div className="flex items-center gap-2">
+                <label className="text-xs font-medium text-slate-600">
+                  Year
+                </label>
+                <input
+                  type="number"
+                  className="w-20 rounded-md border px-2 py-1.5 text-xs"
+                  value={calendarYear}
+                  onChange={(e) => setCalendarYear(Number(e.target.value))}
+                />
+              </div>
+            </div>
+          )}
         </div>
-        <Pagination
-          page={page}
-          pageSize={pageSize}
-          total={items.length}
-          onPageChange={setPage}
-        />
+
+        {viewMode === "table" ? (
+          <>
+            <div className="overflow-x-auto">
+              <table className="min-w-full text-left text-sm">
+                <thead className="border-b bg-slate-50 text-xs font-medium uppercase text-slate-500">
+                  <tr>
+                    <th className="px-3 py-2">Date</th>
+                    <th className="px-3 py-2">Satpam</th>
+                    <th className="px-3 py-2">Shift</th>
+                    {canManage("SCHEDULING") && (
+                      <th className="px-3 py-2">Actions</th>
+                    )}
+                  </tr>
+                </thead>
+                <tbody>
+                  {items
+                    .slice((page - 1) * pageSize, page * pageSize)
+                    .map((it) => (
+                      <tr key={it.id} className="border-b last:border-0">
+                        <td className="px-3 py-2">
+                          {formatDate(it.shift_date)}
+                        </td>
+                        <td className="px-3 py-2">
+                          {it.user_name}
+                        </td>
+                        <td className="px-3 py-2">
+                          {it.shift_name}
+                        </td>
+                        {canManage("SCHEDULING") && (
+                          <td className="px-3 py-2 space-x-2">
+                            <Button
+                              type="button"
+                              size="sm"
+                              variant="ghost"
+                              className="px-2 py-1 text-xs"
+                              onClick={() => {
+                                startEdit(it);
+                                setFormOpen(true);
+                              }}
+                            >
+                              Edit
+                            </Button>
+                            <Button
+                              type="button"
+                              size="sm"
+                              variant="danger"
+                              className="px-2 py-1 text-xs"
+                              onClick={() => handleDelete(it.id)}
+                            >
+                              Delete
+                            </Button>
+                          </td>
+                        )}
+                      </tr>
+                    ))}
+                  {items.length === 0 && (
+                    <tr>
+                      <td
+                        colSpan={4}
+                        className="px-3 py-3 text-center text-sm text-slate-500"
+                      >
+                        No shifts assigned.
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+            <Pagination
+              page={page}
+              pageSize={pageSize}
+              total={items.length}
+              onPageChange={setPage}
+            />
+          </>
+        ) : (
+          <SchedulingCalendarView
+            items={items}
+            month={calendarMonth}
+            year={calendarYear}
+            onShowDayDetails={(dateStr, dayItems) => {
+              setDayDetailDate(dateStr);
+              setDayDetailItems(dayItems);
+              setDayDetailOpen(true);
+            }}
+          />
+        )}
       </section>
 
       <Modal
@@ -492,6 +582,48 @@ export default function SchedulingPage() {
               </Button>
             </div>
           </form>
+        )}
+      </Modal>
+
+      <Modal
+        open={dayDetailOpen}
+        onClose={() => {
+          setDayDetailOpen(false);
+          setDayDetailItems([]);
+          setDayDetailDate(null);
+        }}
+        title={
+          dayDetailDate
+            ? `Assigned Shifts — ${formatDate(dayDetailDate)}`
+            : "Assigned Shifts"
+        }
+        size="lg"
+      >
+        {dayDetailItems.length === 0 ? (
+          <p className="text-sm text-slate-500">No shifts assigned.</p>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="min-w-full text-left text-xs">
+              <thead className="border-b bg-slate-50 text-[11px] font-medium uppercase text-slate-500">
+                <tr>
+                  <th className="px-3 py-2">Satpam</th>
+                  <th className="px-3 py-2">Shift</th>
+                </tr>
+              </thead>
+              <tbody>
+                {dayDetailItems.map((it) => (
+                  <tr key={it.id} className="border-b last:border-0">
+                    <td className="px-3 py-2">
+                      {it.user_name}
+                    </td>
+                    <td className="px-3 py-2">
+                      {it.shift_name}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         )}
       </Modal>
 
@@ -759,6 +891,123 @@ export default function SchedulingPage() {
           </div>
         )}
       </Modal>
+    </div>
+  );
+}
+
+function SchedulingCalendarView({
+  items,
+  month,
+  year,
+  onShowDayDetails,
+}: {
+  items: AdminUserShiftItem[];
+  month: number;
+  year: number;
+  onShowDayDetails?: (date: string, items: AdminUserShiftItem[]) => void;
+}) {
+  const assignmentsByDate = new Map<string, AdminUserShiftItem[]>();
+  items.forEach((it) => {
+    if (!it.shift_date) return;
+    const dateStr = it.shift_date.slice(0, 10);
+    const d = new Date(dateStr);
+    if (
+      d.getFullYear() === year &&
+      d.getMonth() + 1 === month
+    ) {
+      if (!assignmentsByDate.has(dateStr)) {
+        assignmentsByDate.set(dateStr, []);
+      }
+      assignmentsByDate.get(dateStr)!.push(it);
+    }
+  });
+
+  const firstDay = new Date(year, month - 1, 1);
+  const daysInMonth = new Date(year, month, 0).getDate();
+  const startOffset = firstDay.getDay(); // 0 (Sun) - 6 (Sat)
+
+  const cells: (Date | null)[] = [];
+  for (let i = 0; i < startOffset; i++) {
+    cells.push(null);
+  }
+  for (let day = 1; day <= daysInMonth; day++) {
+    cells.push(new Date(year, month - 1, day));
+  }
+
+  const dayNames = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+
+  return (
+    <div className="space-y-3">
+      <div className="grid grid-cols-7 gap-2 text-[11px] font-semibold text-slate-600">
+        {dayNames.map((d) => (
+          <div key={d} className="text-center">
+            {d}
+          </div>
+        ))}
+      </div>
+      <div className="grid grid-cols-7 gap-2 text-xs">
+        {cells.map((date, idx) => {
+          if (!date) {
+            return (
+              <div
+                key={idx}
+                className="min-h-[72px] rounded-md border border-dashed border-slate-200 bg-slate-50"
+              />
+            );
+          }
+          const dateStr = date.toISOString().slice(0, 10);
+          const dayAssignments = assignmentsByDate.get(dateStr) ?? [];
+          const day = date.getDate();
+          return (
+            <div
+              key={idx}
+              className="flex min-h-[96px] flex-col rounded-md border bg-slate-50 p-2"
+            >
+              <div className="mb-1 flex items-center justify-between">
+                <span className="text-xs font-semibold text-slate-800">
+                  {day.toString().padStart(2, "0")}
+                </span>
+                {dayAssignments.length > 0 && (
+                  <span className="rounded-full bg-slate-200 px-1.5 py-0.5 text-[10px] text-slate-700">
+                    {dayAssignments.length}
+                  </span>
+                )}
+              </div>
+              <div className="space-y-1">
+                {dayAssignments.slice(0, 3).map((it) => (
+                  <div
+                    key={it.id}
+                    className="rounded border bg-white px-1 py-0.5 text-[10px] leading-tight"
+                  >
+                    <div className="font-semibold truncate">
+                      {it.user_name}
+                    </div>
+                    <div className="truncate text-slate-600">
+                      {it.shift_name}
+                    </div>
+                  </div>
+                ))}
+                {dayAssignments.length > 3 && (
+                  <button
+                    type="button"
+                    className="text-[10px] text-sky-600 hover:underline"
+                    onClick={() =>
+                      onShowDayDetails?.(dateStr, dayAssignments)
+                    }
+                  >
+                    +{dayAssignments.length - 3} more
+                  </button>
+                )}
+                {dayAssignments.length === 0 && (
+                  <p className="text-[10px] text-slate-400">
+                    No shifts
+                  </p>
+                )}
+              </div>
+            </div>
+          );
+        })}
+      </div>
     </div>
   );
 }

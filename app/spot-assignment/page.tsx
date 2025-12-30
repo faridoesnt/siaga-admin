@@ -309,10 +309,10 @@ export default function SpotAssignmentPage() {
                 .map((it) => (
                 <tr key={it.id} className="border-b last:border-0">
                   <td className="px-3 py-2">
-                    {it.user_name} (#{it.user_id})
+                    {it.user_name}
                   </td>
                   <td className="px-3 py-2">
-                    {it.attendance_spot_name} (#{it.attendance_spot_id})
+                    {it.attendance_spot_name}
                   </td>
                   <td className="px-3 py-2">
                     {formatDate(it.active_from)}
