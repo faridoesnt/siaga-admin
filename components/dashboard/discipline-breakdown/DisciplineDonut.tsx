@@ -42,6 +42,7 @@ export function DisciplineDonut({ breakdown }: DisciplineDonutProps) {
             nameKey="name"
             innerRadius={50}
             outerRadius={80}
+            minAngle={4}
             paddingAngle={3}
           >
             {data.map((entry, index) => (
