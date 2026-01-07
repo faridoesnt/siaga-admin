@@ -11,6 +11,7 @@ import { Badge, Button, Modal } from "@/components/ui";
 import { showError, showSuccess } from "@/lib/toast";
 import { downloadApiFile } from "@/lib/download";
 import { canManage, canView } from "@/lib/permissions";
+import { calculateLateMinutesForItem, formatLateDuration } from "@/lib/late";
 
 const API_BASE_URL =
   process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:8686";
@@ -307,17 +308,34 @@ export default function AttendancePage() {
                     </td>
                     <td className="px-3 py-2">
                       {item.status ? (
-                        <span
-                          className={`rounded-full px-2 py-0.5 text-xs font-medium ${
-                            item.status === "ON_TIME"
-                              ? "bg-emerald-50 text-emerald-700"
-                              : item.status === "LATE"
-                              ? "bg-amber-50 text-amber-700"
-                              : "bg-rose-50 text-rose-700"
-                          }`}
-                        >
-                          {item.status}
-                        </span>
+                        <div className="flex flex-col gap-0.5">
+                          <span
+                            className={`inline-flex rounded-full px-2 py-0.5 text-xs font-medium ${
+                              item.status === "ON_TIME"
+                                ? "bg-emerald-50 text-emerald-700"
+                                : item.status === "LATE"
+                                ? "bg-amber-50 text-amber-700"
+                                : "bg-rose-50 text-rose-700"
+                            }`}
+                          >
+                            {item.status}
+                          </span>
+                          {item.status !== "ON_TIME" && (
+                            (() => {
+                              const mins = calculateLateMinutesForItem(
+                                item,
+                                date
+                              );
+                              const label = formatLateDuration(mins);
+                              if (!label) return null;
+                              return (
+                                <span className="text-[11px] text-slate-500">
+                                  {`Late by ${label}`}
+                                </span>
+                              );
+                            })()
+                          )}
+                        </div>
                       ) : (
                         <span className="text-slate-400">-</span>
                       )}

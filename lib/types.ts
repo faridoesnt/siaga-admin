@@ -93,6 +93,9 @@ export interface AdminAttendanceItem {
   };
   shift: {
     name: string;
+    start_time: string;
+    end_time: string;
+    late_tolerance_minute: number;
   };
   clock_in_time?: string | null;
   clock_out_time?: string | null;
