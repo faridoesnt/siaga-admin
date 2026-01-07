@@ -73,6 +73,8 @@ export interface ShiftSwapRequest {
   target_user_id: number;
   requester_name?: string | null;
   target_name?: string | null;
+  requester_shift_name?: string | null;
+  target_shift_name?: string | null;
   shift_date: string;
   requester_user_shift_id: number;
   target_user_shift_id: number;

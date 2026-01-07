@@ -101,10 +101,24 @@ export default function ApprovalsPage() {
                   <tr key={r.id} className="border-b last:border-0">
                     <td className="px-3 py-2">{r.id}</td>
                     <td className="px-3 py-2">
-                      {r.requester_name || `#${r.requester_user_id}`}
+                      <div className="flex flex-col">
+                        <span>{r.requester_name || `#${r.requester_user_id}`}</span>
+                        {r.requester_shift_name && (
+                          <span className="text-[11px] text-slate-500">
+                            Shift after swap: {r.requester_shift_name}
+                          </span>
+                        )}
+                      </div>
                     </td>
                     <td className="px-3 py-2">
-                      {r.target_name || `#${r.target_user_id}`}
+                      <div className="flex flex-col">
+                        <span>{r.target_name || `#${r.target_user_id}`}</span>
+                        {r.target_shift_name && (
+                          <span className="text-[11px] text-slate-500">
+                            Shift after swap: {r.target_shift_name}
+                          </span>
+                        )}
+                      </div>
                     </td>
                     <td className="px-3 py-2">{formatDate(r.shift_date)}</td>
                     <td className="px-3 py-2">
