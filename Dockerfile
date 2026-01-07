@@ -20,7 +20,8 @@ RUN npm run build
 FROM node:20-alpine
 
 WORKDIR /app
-RUN apk add --no-cache wget
+RUN sed -i 's/dl-cdn.alpinelinux.org/mirrors.aliyun.com/g' /etc/apk/repositories \
+ && apk add --no-cache wget
 
 COPY --from=builder /app ./
 
