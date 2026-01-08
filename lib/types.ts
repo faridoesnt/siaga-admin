@@ -39,6 +39,7 @@ export interface Satpam {
   kebangsaan?: string | null;
   work_start_date: string;
   is_active: boolean;
+  face_enrolled?: boolean;
 }
 
 export interface FaceEnrollStatus {

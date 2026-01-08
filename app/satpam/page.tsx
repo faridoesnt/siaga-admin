@@ -837,87 +837,94 @@ export default function SatpamPage() {
             {/* Desktop / tablet table */}
             <div className="hidden overflow-x-auto md:block">
               <table className="min-w-full text-left text-sm">
-              <thead className="border-b bg-slate-50 text-xs font-medium uppercase text-slate-500">
-                <tr>
-                  <th className="px-3 py-2">Name</th>
-                  <th className="px-3 py-2">Email</th>
-                  <th className="px-3 py-2">Position</th>
-                  <th className="px-3 py-2">Gender</th>
-                  <th className="px-3 py-2">Phone</th>
-                  <th className="px-3 py-2">Work start</th>
-                  <th className="px-3 py-2">Active</th>
-                  {showActionsColumn && (
-                    <th className="px-3 py-2">Actions</th>
-                  )}
-                </tr>
-              </thead>
-              <tbody>
-                {paged.map((s, rowIndex) => {
-                  return (
-                    <tr key={s.id} className="border-b last:border-0">
-                      <td className="px-3 py-2">{s.name}</td>
-                      <td className="px-3 py-2">{s.email}</td>
-                      <td className="px-3 py-2">{s.jabatan}</td>
-                      <td className="px-3 py-2">
-                        {s.jenis_kelamin === "L" ? "Male" : "Female"}
-                      </td>
-                      <td className="px-3 py-2">{s.no_telepon}</td>
-                      <td className="px-3 py-2">
-                        {s.work_start_date ? (
-                          formatDate(s.work_start_date)
-                        ) : (
-                          <span className="text-slate-400">-</span>
-                        )}
-                      </td>
-                      <td className="px-3 py-2">
-                        <Badge variant={s.is_active ? "success" : "muted"}>
-                          {s.is_active ? "Active" : "Inactive"}
-                        </Badge>
-                      </td>
-                      {showActionsColumn && (
-                        <td
-                          className="px-3 py-2"
-                          onClick={(e) => {
-                            // Prevent other click handlers on row.
-                            e.stopPropagation();
-                          }}
-                        >
-                          <div className="flex items-center gap-2">
-                            {canViewSatpam && (
-                              <Button
-                                type="button"
-                                size="sm"
-                                variant="ghost"
-                                className="px-2 py-1 text-xs"
-                                onClick={() => setViewSatpam(s)}
-                              >
-                                View
-                              </Button>
-                            )}
-                            {canManageSatpam && (
-                              <div className="relative">
-                              <Button
-                                type="button"
-                                size="sm"
-                                variant="secondary"
-                                className="px-2 py-1 text-xs"
-                                onClick={(e) =>
-                                  openActionMenu(
-                                    s,
-                                    e.currentTarget as HTMLButtonElement
-                                  )
-                                }
-                              >
-                                More
-                              </Button>
-                            </div>
-                          )}
-                        </div>
+                <thead className="border-b bg-slate-50 text-xs font-medium uppercase text-slate-500">
+                  <tr>
+                    <th className="px-3 py-2">Name</th>
+                    <th className="px-3 py-2">Email</th>
+                    <th className="px-3 py-2">Position</th>
+                    <th className="px-3 py-2">Gender</th>
+                    <th className="px-3 py-2">Phone</th>
+                    <th className="px-3 py-2">Work start</th>
+                    <th className="px-3 py-2">Active</th>
+                    <th className="px-3 py-2">Face enroll</th>
+                    {showActionsColumn && (
+                      <th className="px-3 py-2">Actions</th>
+                    )}
+                  </tr>
+                </thead>
+                <tbody>
+                  {paged.map((s, rowIndex) => {
+                    const enrolled = s.face_enrolled === true;
+                    return (
+                      <tr key={s.id} className="border-b last:border-0">
+                        <td className="px-3 py-2">{s.name}</td>
+                        <td className="px-3 py-2">{s.email}</td>
+                        <td className="px-3 py-2">{s.jabatan}</td>
+                        <td className="px-3 py-2">
+                          {s.jenis_kelamin === "L" ? "Male" : "Female"}
                         </td>
-                      )}
-                    </tr>
-                  );
-                })}
+                        <td className="px-3 py-2">{s.no_telepon}</td>
+                        <td className="px-3 py-2">
+                          {s.work_start_date ? (
+                            formatDate(s.work_start_date)
+                          ) : (
+                            <span className="text-slate-400">-</span>
+                          )}
+                        </td>
+                        <td className="px-3 py-2">
+                          <Badge variant={s.is_active ? "success" : "muted"}>
+                            {s.is_active ? "Active" : "Inactive"}
+                          </Badge>
+                        </td>
+                        <td className="px-3 py-2">
+                          <Badge variant={enrolled ? "success" : "muted"}>
+                            {enrolled ? "Enrolled" : "Not enrolled"}
+                          </Badge>
+                        </td>
+                        {showActionsColumn && (
+                          <td
+                            className="px-3 py-2"
+                            onClick={(e) => {
+                              // Prevent other click handlers on row.
+                              e.stopPropagation();
+                            }}
+                          >
+                            <div className="flex items-center gap-2">
+                              {canViewSatpam && (
+                                <Button
+                                  type="button"
+                                  size="sm"
+                                  variant="ghost"
+                                  className="px-2 py-1 text-xs"
+                                  onClick={() => setViewSatpam(s)}
+                                >
+                                  View
+                                </Button>
+                              )}
+                              {canManageSatpam && (
+                                <div className="relative">
+                                  <Button
+                                    type="button"
+                                    size="sm"
+                                    variant="secondary"
+                                    className="px-2 py-1 text-xs"
+                                    onClick={(e) =>
+                                      openActionMenu(
+                                        s,
+                                        e.currentTarget as HTMLButtonElement
+                                      )
+                                    }
+                                  >
+                                    More
+                                  </Button>
+                                </div>
+                              )}
+                            </div>
+                          </td>
+                        )}
+                      </tr>
+                    );
+                  })}
                 {filtered.length === 0 && (
                   <tr>
                     <td
@@ -934,49 +941,60 @@ export default function SatpamPage() {
 
             {/* Mobile card list */}
             <div className="divide-y md:hidden">
-              {filtered.map((s) => (
-                <div key={s.id} className="px-3 py-3 text-xs">
-                  <div className="flex items-center justify-between gap-2">
-                    <div>
-                      <p className="font-semibold text-slate-900">{s.name}</p>
-                      <p className="text-[11px] text-slate-500">{s.email}</p>
+              {filtered.map((s) => {
+                const enrolled = s.face_enrolled === true;
+                return (
+                  <div key={s.id} className="px-3 py-3 text-xs">
+                    <div className="flex items-center justify-between gap-2">
+                      <div>
+                        <p className="font-semibold text-slate-900">
+                          {s.name}
+                        </p>
+                        <p className="text-[11px] text-slate-500">
+                          {s.email}
+                        </p>
+                      </div>
+                      <div className="flex flex-col items-end gap-1">
+                        <Badge variant={s.is_active ? "success" : "muted"}>
+                          {s.is_active ? "Active" : "Inactive"}
+                        </Badge>
+                        <Badge variant={enrolled ? "success" : "muted"}>
+                          {enrolled ? "Face enrolled" : "No face data"}
+                        </Badge>
+                      </div>
                     </div>
-                    <Badge variant={s.is_active ? "success" : "muted"}>
-                      {s.is_active ? "Active" : "Inactive"}
-                    </Badge>
-                  </div>
-                  <div className="mt-2 grid grid-cols-2 gap-2 text-[11px] text-slate-600">
-                    <div>
-                      <p className="text-[10px] uppercase text-slate-400">
-                        Position
-                      </p>
-                      <p className="font-medium">{s.jabatan || "-"}</p>
+                    <div className="mt-2 grid grid-cols-2 gap-2 text-[11px] text-slate-600">
+                      <div>
+                        <p className="text-[10px] uppercase text-slate-400">
+                          Position
+                        </p>
+                        <p className="font-medium">{s.jabatan || "-"}</p>
+                      </div>
+                      <div>
+                        <p className="text-[10px] uppercase text-slate-400">
+                          Gender
+                        </p>
+                        <p className="font-medium">
+                          {s.jenis_kelamin === "L" ? "Male" : "Female"}
+                        </p>
+                      </div>
+                      <div>
+                        <p className="text-[10px] uppercase text-slate-400">
+                          Phone
+                        </p>
+                        <p className="font-medium">{s.no_telepon || "-"}</p>
+                      </div>
+                      <div>
+                        <p className="text-[10px] uppercase text-slate-400">
+                          Work start
+                        </p>
+                        <p className="font-medium">
+                          {s.work_start_date
+                            ? formatDate(s.work_start_date)
+                            : "-"}
+                        </p>
+                      </div>
                     </div>
-                    <div>
-                      <p className="text-[10px] uppercase text-slate-400">
-                        Gender
-                      </p>
-                      <p className="font-medium">
-                        {s.jenis_kelamin === "L" ? "Male" : "Female"}
-                      </p>
-                    </div>
-                    <div>
-                      <p className="text-[10px] uppercase text-slate-400">
-                        Phone
-                      </p>
-                      <p className="font-medium">{s.no_telepon || "-"}</p>
-                    </div>
-                    <div>
-                      <p className="text-[10px] uppercase text-slate-400">
-                        Work start
-                      </p>
-                      <p className="font-medium">
-                        {s.work_start_date
-                          ? formatDate(s.work_start_date)
-                          : "-"}
-                      </p>
-                    </div>
-                  </div>
                   {showActionsColumn && (
                     <div className="mt-3 flex flex-wrap gap-2">
                       {canViewSatpam && (
