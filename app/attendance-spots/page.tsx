@@ -217,8 +217,10 @@ export default function AttendanceSpotsPage() {
         ) : error ? (
           <p className="text-sm text-red-600">{error}</p>
         ) : (
-          <div className="overflow-x-auto">
-            <table className="min-w-full text-left text-sm">
+          <>
+            {/* Desktop / tablet table */}
+            <div className="hidden overflow-x-auto md:block">
+              <table className="min-w-full text-left text-sm">
               <thead className="border-b bg-slate-50 text-xs font-medium uppercase text-slate-500">
                 <tr>
                   <th className="px-3 py-2">Name</th>
@@ -276,13 +278,75 @@ export default function AttendanceSpotsPage() {
               </tbody>
             </table>
           </div>
+
+            {/* Mobile card list */}
+            <div className="divide-y md:hidden">
+              {spots
+                .slice((page - 1) * pageSize, page * pageSize)
+                .map((s) => (
+                  <div key={s.id} className="px-3 py-3 text-xs">
+                    <p className="text-sm font-semibold text-slate-900">
+                      {s.name}
+                    </p>
+                    <div className="mt-2 grid grid-cols-2 gap-2 text-[11px] text-slate-600">
+                      <div>
+                        <p className="text-[10px] uppercase text-slate-400">
+                          Latitude
+                        </p>
+                        <p className="font-medium">{s.latitude}</p>
+                      </div>
+                      <div>
+                        <p className="text-[10px] uppercase text-slate-400">
+                          Longitude
+                        </p>
+                        <p className="font-medium">{s.longitude}</p>
+                      </div>
+                      <div>
+                        <p className="text-[10px] uppercase text-slate-400">
+                          Radius (m)
+                        </p>
+                        <p className="font-medium">{s.radius_meters}</p>
+                      </div>
+                    </div>
+                    {canManage("ATTENDANCE_SPOT") && (
+                      <div className="mt-3 flex gap-2">
+                        <Button
+                          type="button"
+                          size="sm"
+                          variant="ghost"
+                          className="px-2 py-1 text-[11px]"
+                          onClick={() => startEdit(s)}
+                        >
+                          Edit
+                        </Button>
+                        <Button
+                          type="button"
+                          size="sm"
+                          variant="danger"
+                          className="px-2 py-1 text-[11px]"
+                          onClick={() => handleDelete(s.id)}
+                        >
+                          Delete
+                        </Button>
+                      </div>
+                    )}
+                  </div>
+                ))}
+              {spots.length === 0 && (
+                <p className="px-3 py-4 text-center text-xs text-slate-500">
+                  No attendance spots.
+                </p>
+              )}
+            </div>
+
+            <Pagination
+              page={page}
+              pageSize={pageSize}
+              total={spots.length}
+              onPageChange={setPage}
+            />
+          </>
         )}
-        <Pagination
-          page={page}
-          pageSize={pageSize}
-          total={spots.length}
-          onPageChange={setPage}
-        />
       </section>
 
       <Modal

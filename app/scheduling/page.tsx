@@ -398,7 +398,8 @@ export default function SchedulingPage() {
 
         {viewMode === "table" ? (
           <>
-            <div className="overflow-x-auto">
+            {/* Desktop / tablet table */}
+            <div className="hidden overflow-x-auto md:block">
               <table className="min-w-full text-left text-sm">
                 <thead className="border-b bg-slate-50 text-xs font-medium uppercase text-slate-500">
                   <tr>
@@ -464,6 +465,64 @@ export default function SchedulingPage() {
                 </tbody>
               </table>
             </div>
+
+            {/* Mobile card list */}
+            <div className="divide-y md:hidden">
+              {items
+                .slice((page - 1) * pageSize, page * pageSize)
+                .map((it) => (
+                  <div key={it.id} className="px-3 py-3 text-xs">
+                    <p className="text-sm font-semibold text-slate-900">
+                      {formatDate(it.shift_date)}
+                    </p>
+                    <div className="mt-2 grid grid-cols-2 gap-2 text-[11px] text-slate-600">
+                      <div>
+                        <p className="text-[10px] uppercase text-slate-400">
+                          Security
+                        </p>
+                        <p className="font-medium">{it.user_name}</p>
+                      </div>
+                      <div>
+                        <p className="text-[10px] uppercase text-slate-400">
+                          Shift
+                        </p>
+                        <p className="font-medium">{it.shift_name}</p>
+                      </div>
+                    </div>
+                    {canManage("SCHEDULING") && (
+                      <div className="mt-3 flex gap-2">
+                        <Button
+                          type="button"
+                          size="sm"
+                          variant="ghost"
+                          className="px-2 py-1 text-[11px]"
+                          onClick={() => {
+                            startEdit(it);
+                            setFormOpen(true);
+                          }}
+                        >
+                          Edit
+                        </Button>
+                        <Button
+                          type="button"
+                          size="sm"
+                          variant="danger"
+                          className="px-2 py-1 text-[11px]"
+                          onClick={() => handleDelete(it.id)}
+                        >
+                          Delete
+                        </Button>
+                      </div>
+                    )}
+                  </div>
+                ))}
+              {items.length === 0 && (
+                <p className="px-3 py-4 text-center text-xs text-slate-500">
+                  No shifts assigned.
+                </p>
+              )}
+            </div>
+
             <Pagination
               page={page}
               pageSize={pageSize}

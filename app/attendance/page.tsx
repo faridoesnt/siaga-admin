@@ -234,84 +234,205 @@ export default function AttendancePage() {
         {loading ? (
           <p className="text-sm text-slate-500">Loading...</p>
         ) : (
-          <div className="overflow-x-auto">
-            <table className="min-w-full text-left text-sm">
-              <thead className="border-b bg-slate-50 text-xs font-medium uppercase text-slate-500">
-                <tr>
-                  <th className="px-3 py-2">Security</th>
-                  <th className="px-3 py-2">Shift</th>
-                  <th className="px-3 py-2">Clock in</th>
-                  <th className="px-3 py-2">Clock out</th>
-                  <th className="px-3 py-2">Late status</th>
-                  <th className="px-3 py-2">Face verify</th>
-                  <th className="px-3 py-2">Photos</th>
-                  {canManage("ATTENDANCE_MONITORING") && (
-                    <th className="px-3 py-2">Actions</th>
+          <>
+            {/* Desktop / tablet table */}
+            <div className="hidden overflow-x-auto md:block">
+              <table className="min-w-full text-left text-sm">
+                <thead className="border-b bg-slate-50 text-xs font-medium uppercase text-slate-500">
+                  <tr>
+                    <th className="px-3 py-2">Security</th>
+                    <th className="px-3 py-2">Shift</th>
+                    <th className="px-3 py-2">Clock in</th>
+                    <th className="px-3 py-2">Clock out</th>
+                    <th className="px-3 py-2">Late status</th>
+                    <th className="px-3 py-2">Face verify</th>
+                    <th className="px-3 py-2">Photos</th>
+                    {canManage("ATTENDANCE_MONITORING") && (
+                      <th className="px-3 py-2">Actions</th>
+                    )}
+                  </tr>
+                </thead>
+                <tbody>
+                  {items
+                    .slice((page - 1) * pageSize, page * pageSize)
+                    .map((item, idx) => {
+                      const isOpen = openItems.some(
+                        (o) => o.attendance_id === item.attendance_id
+                      );
+                      return (
+                        <tr key={idx} className="border-b last:border-0">
+                          <td className="px-3 py-2">{item.user.name}</td>
+                          <td className="px-3 py-2">{item.shift.name}</td>
+                          <td className="px-3 py-2">
+                            <div className="flex flex-col">
+                              <span>
+                                {item.clock_in_time ? (
+                                  formatDateTime(item.clock_in_time)
+                                ) : (
+                                  <span className="text-slate-400">-</span>
+                                )}
+                              </span>
+                              {item.clock_in?.spot && (
+                                <span className="text-xs text-slate-500">
+                                  Spot: {item.clock_in.spot.name}
+                                </span>
+                              )}
+                            </div>
+                          </td>
+                          <td className="px-3 py-2">
+                            <div className="flex flex-col">
+                              <span className="flex items-center gap-2">
+                                {item.clock_out_time ? (
+                                  formatDateTime(item.clock_out_time)
+                                ) : (
+                                  <span className="text-slate-400">-</span>
+                                )}
+                                {isOpen && (
+                                  <Badge
+                                    variant="danger"
+                                    className="ml-1 whitespace-nowrap"
+                                  >
+                                    Open
+                                  </Badge>
+                                )}
+                              </span>
+                              {isOpen && (
+                                <span className="text-xs text-slate-500">
+                                  Durasi terbuka:{" "}
+                                  {formatOpenDuration(item.clock_in_time)}
+                                </span>
+                              )}
+                              {item.clock_out?.spot && (
+                                <span className="text-xs text-slate-500">
+                                  Spot: {item.clock_out.spot.name}
+                                </span>
+                              )}
+                            </div>
+                          </td>
+                          <td className="px-3 py-2">
+                            {item.status ? (
+                              <div className="flex flex-col gap-0.5">
+                                <span
+                                  className={`inline-flex rounded-full px-2 py-0.5 text-xs font-medium ${
+                                    item.status === "ON_TIME"
+                                      ? "bg-emerald-50 text-emerald-700"
+                                      : item.status === "LATE"
+                                      ? "bg-amber-50 text-amber-700"
+                                      : "bg-rose-50 text-rose-700"
+                                  }`}
+                                >
+                                  {item.status}
+                                </span>
+                                {item.status !== "ON_TIME" && (
+                                  (() => {
+                                    const mins = calculateLateMinutesForItem(
+                                      item,
+                                      date
+                                    );
+                                    const label = formatLateDuration(mins);
+                                    if (!label) return null;
+                                    return (
+                                      <span className="text-[11px] text-slate-500">
+                                        {`Late by ${label}`}
+                                      </span>
+                                    );
+                                  })()
+                                )}
+                              </div>
+                            ) : (
+                              <span className="text-slate-400">-</span>
+                            )}
+                          </td>
+                          <td className="px-3 py-2">
+                            {item.face_verified ? (
+                              <span className="text-xs text-emerald-700">
+                                Yes{" "}
+                                {typeof item.face_match_score === "number" &&
+                                  `(score: ${item.face_match_score.toFixed(2)})`}
+                              </span>
+                            ) : (
+                              <span className="text-xs text-slate-400">No</span>
+                            )}
+                          </td>
+                          <td className="px-3 py-2">
+                            {(item.clock_in_photo_url ||
+                              item.clock_out_photo_url) ? (
+                              <button
+                                type="button"
+                                onClick={() => setPhotoItem(item)}
+                                className="text-xs font-medium text-slate-900 underline"
+                              >
+                                View
+                              </button>
+                            ) : (
+                              <span className="text-xs text-slate-400">-</span>
+                            )}
+                          </td>
+                          {canManage("ATTENDANCE_MONITORING") && (
+                            <td className="px-3 py-2">
+                              {isOpen ? (
+                                <Button
+                                  type="button"
+                                  size="sm"
+                                  variant="danger"
+                                  className="px-2 py-1 text-xs"
+                                  onClick={() => {
+                                    setForceItem(item);
+                                    setForceReason("");
+                                  }}
+                                >
+                                  Force Clock-Out
+                                </Button>
+                              ) : (
+                                <span className="text-xs text-slate-400">-</span>
+                              )}
+                            </td>
+                          )}
+                        </tr>
+                      );
+                    })}
+                  {items.length === 0 && (
+                    <tr>
+                      <td
+                        colSpan={8}
+                        className="px-3 py-3 text-center text-sm text-slate-500"
+                      >
+                        No attendance records.
+                      </td>
+                    </tr>
                   )}
-                </tr>
-              </thead>
-              <tbody>
-                {items
-                  .slice((page - 1) * pageSize, page * pageSize)
-                  .map((item, idx) => {
-                    const isOpen = openItems.some(
-                      (o) => o.attendance_id === item.attendance_id
-                    );
-                    return (
-                  <tr key={idx} className="border-b last:border-0">
-                    <td className="px-3 py-2">{item.user.name}</td>
-                    <td className="px-3 py-2">{item.shift.name}</td>
-                    <td className="px-3 py-2">
-                      <div className="flex flex-col">
-                        <span>
-                          {item.clock_in_time ? (
-                            formatDateTime(item.clock_in_time)
-                          ) : (
-                            <span className="text-slate-400">-</span>
-                          )}
-                        </span>
-                        {item.clock_in?.spot && (
-                          <span className="text-xs text-slate-500">
-                            Spot: {item.clock_in.spot.name}
-                          </span>
-                        )}
-                      </div>
-                    </td>
-                    <td className="px-3 py-2">
-                      <div className="flex flex-col">
-                        <span className="flex items-center gap-2">
-                          {item.clock_out_time ? (
-                            formatDateTime(item.clock_out_time)
-                          ) : (
-                            <span className="text-slate-400">-</span>
-                          )}
-                          {isOpen && (
-                            <Badge
-                              variant="danger"
-                              className="ml-1 whitespace-nowrap"
-                            >
-                              Open
-                            </Badge>
-                          )}
-                        </span>
-                        {isOpen && (
-                          <span className="text-xs text-slate-500">
-                            Durasi terbuka:{" "}
-                            {formatOpenDuration(item.clock_in_time)}
-                          </span>
-                        )}
-                        {item.clock_out?.spot && (
-                          <span className="text-xs text-slate-500">
-                            Spot: {item.clock_out.spot.name}
-                          </span>
-                        )}
-                      </div>
-                    </td>
-                    <td className="px-3 py-2">
-                      {item.status ? (
-                        <div className="flex flex-col gap-0.5">
+                </tbody>
+              </table>
+            </div>
+
+            {/* Mobile card list */}
+            <div className="divide-y md:hidden">
+              {items
+                .slice((page - 1) * pageSize, page * pageSize)
+                .map((item, idx) => {
+                  const isOpen = openItems.some(
+                    (o) => o.attendance_id === item.attendance_id
+                  );
+                  const lateLabel =
+                    item.status && item.status !== "ON_TIME"
+                      ? formatLateDuration(
+                          calculateLateMinutesForItem(item, date)
+                        )
+                      : "";
+                  return (
+                    <div key={idx} className="px-3 py-3 text-xs">
+                      <div className="flex items-center justify-between gap-2">
+                        <div>
+                          <p className="text-sm font-semibold text-slate-900">
+                            {item.user.name}
+                          </p>
+                          <p className="text-[11px] text-slate-500">
+                            Shift: {item.shift.name}
+                          </p>
+                        </div>
+                        {item.status && (
                           <span
-                            className={`inline-flex rounded-full px-2 py-0.5 text-xs font-medium ${
+                            className={`inline-flex rounded-full px-2 py-0.5 text-[11px] font-medium ${
                               item.status === "ON_TIME"
                                 ? "bg-emerald-50 text-emerald-700"
                                 : item.status === "LATE"
@@ -321,91 +442,132 @@ export default function AttendancePage() {
                           >
                             {item.status}
                           </span>
-                          {item.status !== "ON_TIME" && (
-                            (() => {
-                              const mins = calculateLateMinutesForItem(
-                                item,
-                                date
-                              );
-                              const label = formatLateDuration(mins);
-                              if (!label) return null;
-                              return (
-                                <span className="text-[11px] text-slate-500">
-                                  {`Late by ${label}`}
-                                </span>
-                              );
-                            })()
+                        )}
+                      </div>
+                      <div className="mt-2 grid grid-cols-2 gap-2 text-[11px] text-slate-600">
+                        <div>
+                          <p className="text-[10px] uppercase text-slate-400">
+                            Clock in
+                          </p>
+                          <p className="font-medium">
+                            {item.clock_in_time
+                              ? formatDateTime(item.clock_in_time)
+                              : "-"}
+                          </p>
+                          {item.clock_in?.spot && (
+                            <p className="text-[10px] text-slate-500">
+                              Spot: {item.clock_in.spot.name}
+                            </p>
                           )}
                         </div>
-                      ) : (
-                        <span className="text-slate-400">-</span>
-                      )}
-                    </td>
-                    <td className="px-3 py-2">
-                      {item.face_verified ? (
-                        <span className="text-xs text-emerald-700">
-                          Yes{" "}
-                          {typeof item.face_match_score === "number" &&
-                            `(score: ${item.face_match_score.toFixed(2)})`}
-                        </span>
-                      ) : (
-                        <span className="text-xs text-slate-400">No</span>
-                      )}
-                    </td>
-                    <td className="px-3 py-2">
-                      {(item.clock_in_photo_url || item.clock_out_photo_url) ? (
-                        <button
-                          type="button"
-                          onClick={() => setPhotoItem(item)}
-                          className="text-xs font-medium text-slate-900 underline"
-                        >
-                          View
-                        </button>
-                      ) : (
-                        <span className="text-xs text-slate-400">-</span>
-                      )}
-                    </td>
-                    {canManage("ATTENDANCE_MONITORING") && (
-                      <td className="px-3 py-2">
-                        {isOpen ? (
-                          <Button
-                            type="button"
-                            size="sm"
-                            variant="danger"
-                            className="px-2 py-1 text-xs"
-                            onClick={() => {
-                              setForceItem(item);
-                              setForceReason("");
-                            }}
-                          >
-                            Force Clock-Out
-                          </Button>
-                        ) : (
-                          <span className="text-xs text-slate-400">-</span>
+                        <div>
+                          <p className="text-[10px] uppercase text-slate-400">
+                            Clock out
+                          </p>
+                          <p className="font-medium">
+                            {item.clock_out_time
+                              ? formatDateTime(item.clock_out_time)
+                              : "-"}
+                          </p>
+                          {isOpen && (
+                            <p className="text-[10px] text-rose-600">
+                              Open • {formatOpenDuration(item.clock_in_time)}
+                            </p>
+                          )}
+                          {item.clock_out?.spot && (
+                            <p className="text-[10px] text-slate-500">
+                              Spot: {item.clock_out.spot.name}
+                            </p>
+                          )}
+                        </div>
+                        <div>
+                          <p className="text-[10px] uppercase text-slate-400">
+                            Late status
+                          </p>
+                          <p className="font-medium">
+                            {item.status || "-"}
+                          </p>
+                          {lateLabel && (
+                            <p className="text-[10px] text-slate-500">
+                              {`Late by ${lateLabel}`}
+                            </p>
+                          )}
+                        </div>
+                        <div>
+                          <p className="text-[10px] uppercase text-slate-400">
+                            Face verify
+                          </p>
+                          <p className="font-medium">
+                            {item.face_verified
+                              ? `Yes${
+                                  typeof item.face_match_score === "number"
+                                    ? ` (score: ${item.face_match_score.toFixed(
+                                        2
+                                      )})`
+                                    : ""
+                                }`
+                              : "No"}
+                          </p>
+                        </div>
+                      </div>
+                      <div className="mt-2 flex items-center justify-between gap-2">
+                        <div>
+                          <p className="text-[10px] uppercase text-slate-400">
+                            Photos
+                          </p>
+                          {(item.clock_in_photo_url ||
+                            item.clock_out_photo_url) ? (
+                            <button
+                              type="button"
+                              onClick={() => setPhotoItem(item)}
+                              className="text-[11px] font-medium text-slate-900 underline"
+                            >
+                              View
+                            </button>
+                          ) : (
+                            <p className="text-[11px] text-slate-400">-</p>
+                          )}
+                        </div>
+                        {canManage("ATTENDANCE_MONITORING") && (
+                          <div className="flex justify-end">
+                            {isOpen ? (
+                              <Button
+                                type="button"
+                                size="sm"
+                                variant="danger"
+                                className="px-2 py-1 text-[11px]"
+                                onClick={() => {
+                                  setForceItem(item);
+                                  setForceReason("");
+                                }}
+                              >
+                                Force Clock-Out
+                              </Button>
+                            ) : (
+                              <span className="text-[11px] text-slate-400">
+                                -
+                              </span>
+                            )}
+                          </div>
                         )}
-                      </td>
-                    )}
-                  </tr>
-                )})}
-                {items.length === 0 && (
-                  <tr>
-                    <td
-                      colSpan={8}
-                      className="px-3 py-3 text-center text-sm text-slate-500"
-                    >
-                      No attendance records.
-                    </td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
+                      </div>
+                    </div>
+                  );
+                })}
+              {items.length === 0 && (
+                <p className="px-3 py-4 text-center text-xs text-slate-500">
+                  No attendance records.
+                </p>
+              )}
+            </div>
+
             <Pagination
               page={page}
               pageSize={pageSize}
               total={items.length}
               onPageChange={setPage}
             />
-          </div>
+          </>
         )}
       </section>
 

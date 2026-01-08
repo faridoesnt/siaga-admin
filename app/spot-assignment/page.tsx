@@ -290,7 +290,8 @@ export default function SpotAssignmentPage() {
             </div>
           </div>
         </div>
-        <div className="overflow-x-auto">
+        {/* Desktop / tablet table */}
+        <div className="hidden overflow-x-auto md:block">
           <table className="min-w-full text-left text-sm">
             <thead className="border-b bg-slate-50 text-xs font-medium uppercase text-slate-500">
               <tr>
@@ -307,50 +308,46 @@ export default function SpotAssignmentPage() {
               {items
                 .slice((page - 1) * pageSize, page * pageSize)
                 .map((it) => (
-                <tr key={it.id} className="border-b last:border-0">
-                  <td className="px-3 py-2">
-                    {it.user_name}
-                  </td>
-                  <td className="px-3 py-2">
-                    {it.attendance_spot_name}
-                  </td>
-                  <td className="px-3 py-2">
-                    {formatDate(it.active_from)}
-                  </td>
-                  <td className="px-3 py-2">
-                    {it.active_until
-                      ? formatDate(it.active_until)
-                      : (
+                  <tr key={it.id} className="border-b last:border-0">
+                    <td className="px-3 py-2">{it.user_name}</td>
+                    <td className="px-3 py-2">{it.attendance_spot_name}</td>
+                    <td className="px-3 py-2">
+                      {formatDate(it.active_from)}
+                    </td>
+                    <td className="px-3 py-2">
+                      {it.active_until ? (
+                        formatDate(it.active_until)
+                      ) : (
                         <span className="text-slate-400">ongoing</span>
                       )}
-                  </td>
-                  {canManage("SPOT_ASSIGNMENT") && (
-                    <td className="px-3 py-2 space-x-2">
-                      <Button
-                        type="button"
-                        size="sm"
-                        variant="ghost"
-                        className="px-2 py-1 text-xs"
-                        onClick={() => {
-                          startEdit(it);
-                          setFormOpen(true);
-                        }}
-                      >
-                        Edit
-                      </Button>
-                      <Button
-                        type="button"
-                        size="sm"
-                        variant="danger"
-                        className="px-2 py-1 text-xs"
-                        onClick={() => handleDelete(it.id)}
-                      >
-                        Delete
-                      </Button>
                     </td>
-                  )}
-                </tr>
-              ))}
+                    {canManage("SPOT_ASSIGNMENT") && (
+                      <td className="px-3 py-2 space-x-2">
+                        <Button
+                          type="button"
+                          size="sm"
+                          variant="ghost"
+                          className="px-2 py-1 text-xs"
+                          onClick={() => {
+                            startEdit(it);
+                            setFormOpen(true);
+                          }}
+                        >
+                          Edit
+                        </Button>
+                        <Button
+                          type="button"
+                          size="sm"
+                          variant="danger"
+                          className="px-2 py-1 text-xs"
+                          onClick={() => handleDelete(it.id)}
+                        >
+                          Delete
+                        </Button>
+                      </td>
+                    )}
+                  </tr>
+                ))}
               {items.length === 0 && (
                 <tr>
                   <td
@@ -364,6 +361,76 @@ export default function SpotAssignmentPage() {
             </tbody>
           </table>
         </div>
+
+        {/* Mobile card list */}
+        <div className="divide-y md:hidden">
+          {items
+            .slice((page - 1) * pageSize, page * pageSize)
+            .map((it) => (
+              <div key={it.id} className="px-3 py-3 text-xs">
+                <p className="text-sm font-semibold text-slate-900">
+                  {it.user_name}
+                </p>
+                <div className="mt-2 grid grid-cols-2 gap-2 text-[11px] text-slate-600">
+                  <div>
+                    <p className="text-[10px] uppercase text-slate-400">
+                      Spot
+                    </p>
+                    <p className="font-medium">{it.attendance_spot_name}</p>
+                  </div>
+                  <div>
+                    <p className="text-[10px] uppercase text-slate-400">
+                      Active from
+                    </p>
+                    <p className="font-medium">
+                      {formatDate(it.active_from)}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-[10px] uppercase text-slate-400">
+                      Active until
+                    </p>
+                    <p className="font-medium">
+                      {it.active_until
+                        ? formatDate(it.active_until)
+                        : "ongoing"}
+                    </p>
+                  </div>
+                </div>
+                {canManage("SPOT_ASSIGNMENT") && (
+                  <div className="mt-3 flex gap-2">
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="ghost"
+                      className="px-2 py-1 text-[11px]"
+                      onClick={() => {
+                        startEdit(it);
+                        setFormOpen(true);
+                      }}
+                    >
+                      Edit
+                    </Button>
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="danger"
+                      className="px-2 py-1 text-[11px]"
+                      onClick={() => handleDelete(it.id)}
+                    >
+                      Delete
+                    </Button>
+                  </div>
+                )}
+              </div>
+            ))}
+          {items.length === 0 && (
+            <p className="px-3 py-4 text-center text-xs text-slate-500">
+              No active spot assignments.
+            </p>
+          )}
+        </div>
+
         <Pagination
           page={page}
           pageSize={pageSize}

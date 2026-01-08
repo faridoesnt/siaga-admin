@@ -236,70 +236,136 @@ export default function AdminPage() {
         )}
       </div>
 
-      <div className="overflow-x-auto rounded-lg border bg-white">
-        <table className="min-w-full text-left text-xs">
-          <thead className="bg-slate-50 text-[11px] font-medium uppercase text-slate-500">
-            <tr>
-              <th className="px-3 py-2">Nama</th>
-              <th className="px-3 py-2">Email</th>
-              <th className="px-3 py-2">Permissions</th>
-              {canManage("ADMIN") && (
-                <th className="px-3 py-2 text-right">Actions</th>
-              )}
-            </tr>
-          </thead>
-          <tbody>
-            {items.map((admin) => (
-              <tr key={admin.id} className="border-t last:border-b-0">
-                <td className="px-3 py-1.5">{admin.name}</td>
-                <td className="px-3 py-1.5">{admin.email}</td>
-                <td className="px-3 py-1.5">
-                  <div className="flex flex-wrap gap-1">
-                    {admin.permissions.map((code) => (
-                      <span
-                        key={code}
-                        className="rounded-full bg-slate-100 px-2 py-0.5 text-[10px] text-slate-700"
-                      >
-                        {code}
-                      </span>
-                    ))}
-                  </div>
-                </td>
+      <div className="rounded-lg border bg-white">
+        {/* Desktop / tablet table */}
+        <div className="hidden overflow-x-auto md:block">
+          <table className="min-w-full text-left text-xs">
+            <thead className="bg-slate-50 text-[11px] font-medium uppercase text-slate-500">
+              <tr>
+                <th className="px-3 py-2">Name</th>
+                <th className="px-3 py-2">Email</th>
+                <th className="px-3 py-2">Permissions</th>
                 {canManage("ADMIN") && (
-                  <td className="px-3 py-1.5 text-right">
-                    {authUser && authUser.id === admin.id ? null : (
-                      <div className="inline-flex gap-1">
-                        <button
-                          type="button"
-                          onClick={() => openEdit(admin)}
-                          className="text-xs font-medium text-slate-700 hover:underline"
-                        >
-                          Edit
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => openReset(admin)}
-                          className="text-xs font-medium text-amber-700 hover:underline"
-                        >
-                          Reset Password
-                        </button>
-                        <Button
-                          type="button"
-                          size="sm"
-                          variant="danger"
-                          className="text-xs px-2 py-1"
-                          onClick={() => openDelete(admin)}
-                        >
-                          Delete
-                        </Button>
-                      </div>
-                    )}
-                  </td>
+                  <th className="px-3 py-2 text-right">Actions</th>
                 )}
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {items.map((admin) => (
+                <tr key={admin.id} className="border-t last:border-b-0">
+                  <td className="px-3 py-1.5">{admin.name}</td>
+                  <td className="px-3 py-1.5">{admin.email}</td>
+                  <td className="px-3 py-1.5">
+                    <div className="flex flex-wrap gap-1">
+                      {admin.permissions.map((code) => (
+                        <span
+                          key={code}
+                          className="break-all rounded-full bg-slate-100 px-2 py-0.5 text-[10px] text-slate-700"
+                        >
+                          {code}
+                        </span>
+                      ))}
+                    </div>
+                  </td>
+                  {canManage("ADMIN") && (
+                    <td className="px-3 py-1.5 text-right">
+                      {authUser && authUser.id === admin.id ? null : (
+                        <div className="inline-flex gap-1">
+                          <button
+                            type="button"
+                            onClick={() => openEdit(admin)}
+                            className="text-xs font-medium text-slate-700 hover:underline"
+                          >
+                            Edit
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => openReset(admin)}
+                            className="text-xs font-medium text-amber-700 hover:underline"
+                          >
+                            Reset Password
+                          </button>
+                          <Button
+                            type="button"
+                            size="sm"
+                            variant="danger"
+                            className="px-2 py-1 text-xs"
+                            onClick={() => openDelete(admin)}
+                          >
+                            Delete
+                          </Button>
+                        </div>
+                      )}
+                    </td>
+                  )}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+
+        {/* Mobile card list */}
+        <div className="divide-y md:hidden">
+          {items.map((admin) => (
+            <div key={admin.id} className="px-3 py-3 text-xs">
+              <div className="flex items-center justify-between gap-2">
+                <div>
+                  <p className="font-semibold text-slate-900">{admin.name}</p>
+                  <p className="text-[11px] text-slate-500">{admin.email}</p>
+                </div>
+                {canManage("ADMIN") && authUser && authUser.id !== admin.id && (
+                  <button
+                    type="button"
+                    onClick={() => openEdit(admin)}
+                    className="text-[11px] font-medium text-slate-700 underline"
+                  >
+                    Edit
+                  </button>
+                )}
+              </div>
+              <div className="mt-2">
+                <p className="text-[10px] font-semibold uppercase text-slate-500">
+                  Permissions
+                </p>
+                <div className="mt-1 flex flex-wrap gap-1">
+                  {admin.permissions.map((code) => (
+                    <span
+                      key={code}
+                      className="break-all rounded-full bg-slate-100 px-2 py-0.5 text-[10px] text-slate-700"
+                    >
+                      {code}
+                    </span>
+                  ))}
+                </div>
+              </div>
+              {canManage("ADMIN") && authUser && authUser.id !== admin.id && (
+                <div className="mt-3 flex flex-wrap gap-2">
+                  <button
+                    type="button"
+                    onClick={() => openReset(admin)}
+                    className="text-[11px] font-medium text-amber-700 underline"
+                  >
+                    Reset Password
+                  </button>
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="danger"
+                    className="px-2 py-1 text-[11px]"
+                    onClick={() => openDelete(admin)}
+                  >
+                    Delete
+                  </Button>
+                </div>
+              )}
+            </div>
+          ))}
+          {items.length === 0 && (
+            <p className="px-3 py-4 text-center text-xs text-slate-500">
+              No admins found.
+            </p>
+          )}
+        </div>
       </div>
 
       {modalType && (

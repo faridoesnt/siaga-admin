@@ -81,50 +81,104 @@ export default function ApprovalsPage() {
         {loading ? (
           <p className="text-sm text-slate-500">Loading...</p>
         ) : (
-          <div className="overflow-x-auto">
-            <table className="min-w-full text-left text-sm">
-              <thead className="border-b bg-slate-50 text-xs font-medium uppercase text-slate-500">
-                <tr>
-                  <th className="px-3 py-2">ID</th>
-                  <th className="px-3 py-2">Requester</th>
-                  <th className="px-3 py-2">Target</th>
-                  <th className="px-3 py-2">Shift date</th>
-                  <th className="px-3 py-2">Reason</th>
-                  <th className="px-3 py-2">Status</th>
-                  <th className="px-3 py-2">Created at</th>
-                </tr>
-              </thead>
-              <tbody>
-                {requests
-                  .slice((page - 1) * pageSize, page * pageSize)
-                  .map((r) => (
-                  <tr key={r.id} className="border-b last:border-0">
-                    <td className="px-3 py-2">{r.id}</td>
-                    <td className="px-3 py-2">
-                      <div className="flex flex-col">
-                        <span>{r.requester_name || `#${r.requester_user_id}`}</span>
-                        {r.requester_shift_name && (
-                          <span className="text-[11px] text-slate-500">
-                            Shift after swap: {r.requester_shift_name}
-                          </span>
-                        )}
+          <>
+            {/* Desktop / tablet table */}
+            <div className="hidden overflow-x-auto md:block">
+              <table className="min-w-full text-left text-sm">
+                <thead className="border-b bg-slate-50 text-xs font-medium uppercase text-slate-500">
+                  <tr>
+                    <th className="px-3 py-2">ID</th>
+                    <th className="px-3 py-2">Requester</th>
+                    <th className="px-3 py-2">Target</th>
+                    <th className="px-3 py-2">Shift date</th>
+                    <th className="px-3 py-2">Reason</th>
+                    <th className="px-3 py-2">Status</th>
+                    <th className="px-3 py-2">Created at</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {requests
+                    .slice((page - 1) * pageSize, page * pageSize)
+                    .map((r) => (
+                      <tr key={r.id} className="border-b last:border-0">
+                        <td className="px-3 py-2">{r.id}</td>
+                        <td className="px-3 py-2">
+                          <div className="flex flex-col">
+                            <span>
+                              {r.requester_name || `#${r.requester_user_id}`}
+                            </span>
+                            {r.requester_shift_name && (
+                              <span className="text-[11px] text-slate-500">
+                                Shift after swap: {r.requester_shift_name}
+                              </span>
+                            )}
+                          </div>
+                        </td>
+                        <td className="px-3 py-2">
+                          <div className="flex flex-col">
+                            <span>
+                              {r.target_name || `#${r.target_user_id}`}
+                            </span>
+                            {r.target_shift_name && (
+                              <span className="text-[11px] text-slate-500">
+                                Shift after swap: {r.target_shift_name}
+                              </span>
+                            )}
+                          </div>
+                        </td>
+                        <td className="px-3 py-2">
+                          {formatDate(r.shift_date)}
+                        </td>
+                        <td className="px-3 py-2">
+                          {r.reason || (
+                            <span className="text-slate-400">-</span>
+                          )}
+                        </td>
+                        <td className="px-3 py-2">
+                          <Badge
+                            variant={
+                              r.status === "PENDING"
+                                ? "muted"
+                                : r.status === "APPROVED"
+                                ? "success"
+                                : "danger"
+                            }
+                          >
+                            {r.status}
+                          </Badge>
+                        </td>
+                        <td className="px-3 py-2 text-xs text-slate-500">
+                          {formatDateTime(r.created_at)}
+                        </td>
+                      </tr>
+                    ))}
+                  {requests.length === 0 && (
+                    <tr>
+                      <td
+                        colSpan={7}
+                        className="px-3 py-3 text-center text-sm text-slate-500"
+                      >
+                        No requests.
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+
+            {/* Mobile card list */}
+            <div className="divide-y md:hidden">
+              {requests
+                .slice((page - 1) * pageSize, page * pageSize)
+                .map((r) => (
+                  <div key={r.id} className="px-3 py-3 text-xs">
+                    <div className="flex items-center justify-between gap-2">
+                      <div>
+                        <p className="text-[11px] font-semibold text-slate-500">
+                          ID
+                        </p>
+                        <p className="font-medium text-slate-900">{r.id}</p>
                       </div>
-                    </td>
-                    <td className="px-3 py-2">
-                      <div className="flex flex-col">
-                        <span>{r.target_name || `#${r.target_user_id}`}</span>
-                        {r.target_shift_name && (
-                          <span className="text-[11px] text-slate-500">
-                            Shift after swap: {r.target_shift_name}
-                          </span>
-                        )}
-                      </div>
-                    </td>
-                    <td className="px-3 py-2">{formatDate(r.shift_date)}</td>
-                    <td className="px-3 py-2">
-                      {r.reason || <span className="text-slate-400">-</span>}
-                    </td>
-                    <td className="px-3 py-2">
                       <Badge
                         variant={
                           r.status === "PENDING"
@@ -136,31 +190,70 @@ export default function ApprovalsPage() {
                       >
                         {r.status}
                       </Badge>
-                    </td>
-                    <td className="px-3 py-2 text-xs text-slate-500">
-                      {formatDateTime(r.created_at)}
-                    </td>
-                  </tr>
+                    </div>
+                    <div className="mt-2 grid grid-cols-2 gap-2 text-[11px] text-slate-600">
+                      <div>
+                        <p className="text-[10px] uppercase text-slate-400">
+                          Requester
+                        </p>
+                        <p className="font-medium">
+                          {r.requester_name || `#${r.requester_user_id}`}
+                        </p>
+                        {r.requester_shift_name && (
+                          <p className="text-[10px] text-slate-500">
+                            Shift after swap: {r.requester_shift_name}
+                          </p>
+                        )}
+                      </div>
+                      <div>
+                        <p className="text-[10px] uppercase text-slate-400">
+                          Target
+                        </p>
+                        <p className="font-medium">
+                          {r.target_name || `#${r.target_user_id}`}
+                        </p>
+                        {r.target_shift_name && (
+                          <p className="text-[10px] text-slate-500">
+                            Shift after swap: {r.target_shift_name}
+                          </p>
+                        )}
+                      </div>
+                      <div>
+                        <p className="text-[10px] uppercase text-slate-400">
+                          Shift date
+                        </p>
+                        <p className="font-medium">
+                          {formatDate(r.shift_date)}
+                        </p>
+                      </div>
+                      <div>
+                        <p className="text-[10px] uppercase text-slate-400">
+                          Reason
+                        </p>
+                        <p className="font-medium">
+                          {r.reason || "-"}
+                        </p>
+                      </div>
+                    </div>
+                    <p className="mt-2 text-[10px] text-slate-500">
+                      Created at: {formatDateTime(r.created_at)}
+                    </p>
+                  </div>
                 ))}
-                {requests.length === 0 && (
-                  <tr>
-                    <td
-                      colSpan={7}
-                      className="px-3 py-3 text-center text-sm text-slate-500"
-                    >
-                      No requests.
-                    </td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
+              {requests.length === 0 && (
+                <p className="px-3 py-4 text-center text-xs text-slate-500">
+                  No requests.
+                </p>
+              )}
+            </div>
+
             <Pagination
               page={page}
               pageSize={pageSize}
               total={requests.length}
               onPageChange={setPage}
             />
-          </div>
+          </>
         )}
       </section>
 
