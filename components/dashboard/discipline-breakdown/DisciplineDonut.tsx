@@ -18,16 +18,16 @@ const COLORS = ["#f97316", "#0ea5e9", "#ef4444", "#64748b", "#10b981"];
 
 export function DisciplineDonut({ breakdown }: DisciplineDonutProps) {
   const data = [
-    { name: "Terlambat", value: breakdown.late },
-    { name: "Pulang lebih awal", value: breakdown.early_leave },
-    { name: "Tidak masuk shift", value: breakdown.missed_shift },
-    { name: "Belum absen", value: breakdown.belum_absen },
+    { name: "Late", value: breakdown.late },
+    { name: "Early leave", value: breakdown.early_leave },
+    { name: "Missed shift", value: breakdown.missed_shift },
+    { name: "Not yet checked in", value: breakdown.belum_absen },
   ].filter((d) => d.value > 0);
 
   if (data.length === 0) {
     return (
       <p className="text-xs text-slate-400">
-        Tidak ada pelanggaran disiplin pada bulan ini.
+        No discipline violations in this month.
       </p>
     );
   }

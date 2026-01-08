@@ -16,9 +16,10 @@ import { calculateLateMinutesForItem, formatLateDuration } from "@/lib/late";
 const API_BASE_URL =
   process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:8686";
 
+import { todayLocalISO } from "@/lib/date";
+
 function todayString() {
-  const d = new Date();
-  return d.toISOString().slice(0, 10);
+  return todayLocalISO();
 }
 
 export default function AttendancePage() {
@@ -237,7 +238,7 @@ export default function AttendancePage() {
             <table className="min-w-full text-left text-sm">
               <thead className="border-b bg-slate-50 text-xs font-medium uppercase text-slate-500">
                 <tr>
-                  <th className="px-3 py-2">Satpam</th>
+                  <th className="px-3 py-2">Security</th>
                   <th className="px-3 py-2">Shift</th>
                   <th className="px-3 py-2">Clock in</th>
                   <th className="px-3 py-2">Clock out</th>

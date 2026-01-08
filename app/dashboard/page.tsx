@@ -73,17 +73,17 @@ export default function DashboardPage() {
     return (
       <div className="space-y-3">
         <h2 className="text-sm font-semibold text-red-700">
-          Gagal memuat dashboard
+          Failed to load dashboard
         </h2>
         <p className="text-xs text-slate-700">
-          {error || "Terjadi kesalahan tak terduga."}
+          {error || "An unexpected error occurred."}
         </p>
         <button
           type="button"
           onClick={() => setMonth(currentMonth())}
           className="rounded-md bg-slate-900 px-3 py-1.5 text-xs font-semibold text-slate-50"
         >
-          Coba lagi
+          Try again
         </button>
       </div>
     );

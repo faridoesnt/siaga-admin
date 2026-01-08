@@ -44,12 +44,12 @@ export function ExecutiveSummary({ summary, kpis }: ExecutiveSummaryProps) {
           Executive Summary
         </h2>
         <p className="text-xs text-slate-500">
-          Ringkasan singkat performa kehadiran satpam pada bulan terpilih.
+          High-level overview of security attendance for the selected month.
         </p>
       </div>
       <div className="grid gap-3 md:grid-cols-5">
         <KpiCard
-          label="Total Satpam"
+          label="Total Security"
           value={summary.total_security.toString()}
           delta={0}
           trend="flat"

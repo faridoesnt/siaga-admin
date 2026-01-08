@@ -39,11 +39,10 @@ export function DashboardActions({ month }: DashboardActionsProps) {
           Actions & Export
         </h2>
         <p className="text-xs text-slate-500">
-          Export laporan kehadiran untuk bulan yang dipilih.
+          Export attendance report for the selected month.
         </p>
       </div>
       <ExportButton onClick={handleExport} loading={loading} />
     </section>
   );
 }
-

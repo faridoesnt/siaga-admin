@@ -403,7 +403,7 @@ export default function SchedulingPage() {
                 <thead className="border-b bg-slate-50 text-xs font-medium uppercase text-slate-500">
                   <tr>
                     <th className="px-3 py-2">Date</th>
-                    <th className="px-3 py-2">Satpam</th>
+                    <th className="px-3 py-2">Security</th>
                     <th className="px-3 py-2">Shift</th>
                     {canManage("SCHEDULING") && (
                       <th className="px-3 py-2">Actions</th>
@@ -606,7 +606,7 @@ export default function SchedulingPage() {
             <table className="min-w-full text-left text-xs">
               <thead className="border-b bg-slate-50 text-[11px] font-medium uppercase text-slate-500">
                 <tr>
-                  <th className="px-3 py-2">Satpam</th>
+                  <th className="px-3 py-2">Security</th>
                   <th className="px-3 py-2">Shift</th>
                 </tr>
               </thead>
@@ -868,7 +868,7 @@ export default function SchedulingPage() {
                   <table className="min-w-full text-left text-[11px]">
                     <thead className="border-b bg-red-50 text-[10px] font-medium text-red-700">
                       <tr>
-                        <th className="px-2 py-1">Satpam</th>
+                        <th className="px-2 py-1">Security</th>
                         <th className="px-2 py-1">Date</th>
                         <th className="px-2 py-1">Value</th>
                         <th className="px-2 py-1">Reason</th>

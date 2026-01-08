@@ -60,7 +60,7 @@ export default function AdminPage() {
           router.replace("/login");
           return;
         }
-        toast.error("Gagal memuat data admin");
+        toast.error("Failed to load admin data.");
       } finally {
         setLoading(false);
       }
@@ -111,7 +111,7 @@ export default function AdminPage() {
 
   const handleSubmitCreate = async () => {
     if (!canManage("ADMIN")) {
-      toast.error("Tidak punya izin untuk membuat admin.");
+      toast.error("You do not have permission to create admins.");
       return;
     }
     try {
@@ -126,11 +126,11 @@ export default function AdminPage() {
         body: JSON.stringify(payload),
       });
       setItems((prev) => [...prev, created]);
-      toast.success("Admin berhasil dibuat");
+      toast.success("Admin created.");
       closeModal();
     } catch (err) {
       toast.error(
-        err instanceof Error ? err.message : "Gagal membuat admin"
+        err instanceof Error ? err.message : "Failed to create admin."
       );
     }
   };
@@ -138,7 +138,7 @@ export default function AdminPage() {
   const handleSubmitEdit = async () => {
     if (!selectedAdmin) return;
     if (!canManage("ADMIN")) {
-      toast.error("Tidak punya izin untuk mengubah admin.");
+      toast.error("You do not have permission to update admins.");
       return;
     }
     try {
@@ -152,11 +152,11 @@ export default function AdminPage() {
         body: JSON.stringify(payload),
       });
       setItems((prev) => prev.map((a) => (a.id === updated.id ? updated : a)));
-      toast.success("Admin berhasil diperbarui");
+      toast.success("Admin updated.");
       closeModal();
     } catch (err) {
       toast.error(
-        err instanceof Error ? err.message : "Gagal mengubah admin"
+        err instanceof Error ? err.message : "Failed to update admin."
       );
     }
   };
@@ -164,7 +164,7 @@ export default function AdminPage() {
   const handleSubmitReset = async () => {
     if (!selectedAdmin) return;
     if (!canManage("ADMIN")) {
-      toast.error("Tidak punya izin untuk reset password.");
+      toast.error("You do not have permission to reset passwords.");
       return;
     }
     try {
@@ -172,11 +172,11 @@ export default function AdminPage() {
         method: "POST",
         body: JSON.stringify({ new_password: formPassword }),
       });
-      toast.success("Password admin berhasil direset");
+      toast.success("Admin password has been reset.");
       closeModal();
     } catch (err) {
       toast.error(
-        err instanceof Error ? err.message : "Gagal reset password admin"
+        err instanceof Error ? err.message : "Failed to reset admin password."
       );
     }
   };
@@ -184,7 +184,7 @@ export default function AdminPage() {
   const handleSubmitDelete = async () => {
     if (!selectedAdmin) return;
     if (!canManage("ADMIN")) {
-      toast.error("Tidak punya izin untuk menghapus admin.");
+      toast.error("You do not have permission to delete admins.");
       return;
     }
     try {
@@ -192,11 +192,11 @@ export default function AdminPage() {
         method: "DELETE",
       });
       setItems((prev) => prev.filter((a) => a.id !== selectedAdmin.id));
-      toast.success("Admin berhasil dihapus");
+      toast.success("Admin deleted.");
       closeModal();
     } catch (err) {
       toast.error(
-        err instanceof Error ? err.message : "Gagal menghapus admin"
+        err instanceof Error ? err.message : "Failed to delete admin."
       );
     }
   };
@@ -222,7 +222,7 @@ export default function AdminPage() {
             Admin Management
           </h1>
           <p className="text-xs text-slate-500">
-            Kelola akun admin dan izin akses fitur SIAGA CS.
+            Manage admin accounts and feature access permissions for SIAGA CS.
           </p>
         </div>
         {canManage("ADMIN") && (

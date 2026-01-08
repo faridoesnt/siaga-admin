@@ -15,7 +15,7 @@ interface Props {
 const navItems: { href: string; label: string; perm: PermissionCode }[] = [
   { href: "/dashboard", label: "Dashboard", perm: "DASHBOARD_VIEW" },
   { href: "/admin", label: "Admin Management", perm: "ADMIN_VIEW" },
-  { href: "/satpam", label: "Satpam", perm: "SATPAM_VIEW" },
+  { href: "/satpam", label: "Security", perm: "SATPAM_VIEW" },
   { href: "/attendance-spots", label: "Attendance Spots", perm: "ATTENDANCE_SPOT_VIEW" },
   { href: "/shifts", label: "Shifts", perm: "SHIFT_VIEW" },
   { href: "/scheduling", label: "Scheduling", perm: "SCHEDULING_VIEW" },

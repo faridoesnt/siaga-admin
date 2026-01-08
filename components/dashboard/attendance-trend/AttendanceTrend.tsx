@@ -16,7 +16,7 @@ export function AttendanceTrend({ trend }: AttendanceTrendProps) {
             Attendance & Discipline Trend
           </h2>
           <p className="text-xs text-slate-500">
-            Pergerakan kehadiran, keterlambatan, dan ketidakhadiran per hari.
+            Daily movement of presence, lateness, and absence.
           </p>
         </div>
         <TrendToggle value={view} onChange={setView} />
@@ -25,4 +25,3 @@ export function AttendanceTrend({ trend }: AttendanceTrendProps) {
     </section>
   );
 }
-

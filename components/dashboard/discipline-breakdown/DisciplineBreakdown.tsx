@@ -17,7 +17,7 @@ export function DisciplineBreakdown({ breakdown }: DisciplineBreakdownProps) {
             Discipline Breakdown
           </h2>
           <p className="text-xs text-slate-500">
-            Ringkasan jenis pelanggaran disiplin dalam bulan ini.
+            Summary of discipline violations in this month.
           </p>
         </div>
       </div>
@@ -25,22 +25,22 @@ export function DisciplineBreakdown({ breakdown }: DisciplineBreakdownProps) {
         <div className="space-y-2">
           <div className="grid gap-3 md:grid-cols-2">
             <MiniStatCard
-              label="Terlambat"
+              label="Late"
               value={breakdown.late}
               color="amber"
             />
             <MiniStatCard
-              label="Pulang lebih awal"
+              label="Early leave"
               value={breakdown.early_leave}
               color="sky"
             />
             <MiniStatCard
-              label="Tidak masuk shift"
+              label="Missed shift"
               value={breakdown.missed_shift}
               color="slate"
             />
             <MiniStatCard
-              label="Belum absen (shift belum lewat)"
+              label="Not yet checked in (upcoming shifts)"
               value={breakdown.belum_absen}
               color="emerald"
             />

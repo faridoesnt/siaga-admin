@@ -25,23 +25,23 @@ export function AttendanceConsistency({
           Attendance Consistency
         </h2>
         <p className="text-xs text-slate-500">
-          Gambaran konsistensi kehadiran satpam pada periode ini.
+          Overview of security attendance consistency for this period.
         </p>
       </div>
       <div className="grid gap-3 md:grid-cols-3">
         <ConsistencyCard
-          label="Satpam konsisten"
+          label="Consistent security"
           value={`${consistency.consistent}`}
-          description={`${consistentRate.toFixed(1)}% dari total`}
+          description={`${consistentRate.toFixed(1)}% of total`}
         />
         <ConsistencyCard
-          label="Satpam tidak konsisten"
+          label="Irregular security"
           value={`${consistency.irregular}`}
         />
         <ConsistencyCard
-          label="Rata-rata hari hadir per satpam"
+          label="Avg presence days per security"
           value={Number(consistency.avg_streak_days || 0).toFixed(1)}
-          description="Perkiraan rata-rata hari hadir dalam bulan ini"
+          description="Estimated average days present in this month"
         />
       </div>
     </section>

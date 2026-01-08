@@ -19,7 +19,7 @@ export function AuditCompliance({ audit }: AuditComplianceProps) {
           Audit & Compliance
         </h2>
         <p className="text-xs text-slate-500">
-          Indikator override manual dan kelengkapan bukti absensi.
+          Indicators for manual overrides and attendance data completeness.
         </p>
       </div>
       <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-2">

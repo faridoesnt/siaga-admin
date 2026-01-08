@@ -180,7 +180,9 @@ export default function SatpamPage() {
           router.replace("/login");
           return;
         }
-        setError(err instanceof Error ? err.message : "Failed to load satpam");
+        setError(
+          err instanceof Error ? err.message : "Failed to load security staff."
+        );
       } finally {
         setLoading(false);
       }
@@ -210,7 +212,7 @@ export default function SatpamPage() {
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!canManage("SATPAM")) {
-      showError("You do not have permission to manage satpam.");
+      showError("You do not have permission to manage security staff.");
       return;
     }
     setCreating(true);
@@ -237,7 +239,7 @@ export default function SatpamPage() {
         kebangsaan: "",
         work_start_date: "",
       });
-      showSuccess("Satpam created.");
+      showSuccess("Security staff created.");
       setCreateOpen(false);
     } catch (err) {
       if (err instanceof ApiError && (err.status === 401 || err.status === 403)) {
@@ -245,7 +247,7 @@ export default function SatpamPage() {
         return;
       }
       const msg =
-        err instanceof Error ? err.message : "Failed to create satpam";
+        err instanceof Error ? err.message : "Failed to create security staff.";
       showError(msg);
     } finally {
       setCreating(false);
@@ -275,7 +277,7 @@ export default function SatpamPage() {
       const data = await apiFetch<Satpam[]>("/v1/admin/satpam");
       setSatpam(data);
       showSuccess(
-        `Satpam ${user.name} set to ${
+        `Security ${user.name} set to ${
           !user.is_active ? "active" : "inactive"
         }.`
       );
@@ -288,7 +290,7 @@ export default function SatpamPage() {
       const msg =
         err instanceof Error
           ? err.message
-          : "Failed to update satpam status";
+          : "Failed to update security status.";
       showError(msg);
     }
   };
@@ -346,7 +348,7 @@ export default function SatpamPage() {
         prev.map((s) => (s.id === updated.id ? updated : s))
       );
       cancelEdit();
-      showSuccess("Satpam updated.");
+      showSuccess("Security staff updated.");
     } catch (err) {
       if (
         err instanceof ApiError &&
@@ -356,7 +358,7 @@ export default function SatpamPage() {
         return;
       }
       const msg =
-        err instanceof Error ? err.message : "Failed to update satpam";
+        err instanceof Error ? err.message : "Failed to update security staff.";
       showError(msg);
     } finally {
       setSavingEdit(false);
@@ -371,7 +373,7 @@ export default function SatpamPage() {
     const user = confirmState.target;
     if (!user) return;
     if (!canManage("SATPAM")) {
-      showError("You do not have permission to delete satpam.");
+      showError("You do not have permission to delete security staff.");
       return;
     }
     try {
@@ -382,7 +384,7 @@ export default function SatpamPage() {
       if (editing && editing.id === user.id) {
         cancelEdit();
       }
-      showSuccess("Satpam deleted.");
+      showSuccess("Security staff deleted.");
       setConfirmState({ type: null });
     } catch (err) {
       if (
@@ -393,7 +395,7 @@ export default function SatpamPage() {
         return;
       }
       const msg =
-        err instanceof Error ? err.message : "Failed to delete satpam";
+        err instanceof Error ? err.message : "Failed to delete security staff.";
       showError(msg);
     }
   };
@@ -459,18 +461,18 @@ export default function SatpamPage() {
 
   const handleExportSatpam = async () => {
     if (!canManage("SATPAM")) {
-      showError("You do not have permission to export satpam.");
+      showError("You do not have permission to export security staff.");
       return;
     }
     try {
       await downloadApiFile(
         "/v1/admin/export/satpam",
-        `satpam_export_${new Date().toISOString().slice(0, 10)}.xlsx`
+        `security_export_${new Date().toISOString().slice(0, 10)}.xlsx`
       );
-      showSuccess("Satpam export downloaded.");
+      showSuccess("Security export downloaded.");
     } catch (err) {
       const msg =
-        err instanceof Error ? err.message : "Failed to export satpam";
+        err instanceof Error ? err.message : "Failed to export security staff.";
       showError(msg);
     }
   };
@@ -490,7 +492,7 @@ export default function SatpamPage() {
       return;
     }
     if (!canManage("SATPAM")) {
-      setImportError("You do not have permission to manage satpam.");
+      setImportError("You do not have permission to manage security staff.");
       return;
     }
     setImporting(true);
@@ -523,14 +525,15 @@ export default function SatpamPage() {
       }
 
       if (!res.ok || !payload.success) {
-        const msg = payload.error?.message || "Failed to import satpam";
+        const msg =
+          payload.error?.message || "Failed to import security staff.";
         setImportError(msg);
         showError(msg);
         return;
       }
 
       const inserted = payload.data?.inserted_count ?? 0;
-      showSuccess(`Imported ${inserted} satpam.`);
+      showSuccess(`Imported ${inserted} security staff.`);
 
       // Refresh list after import
       const data = await apiFetch<Satpam[]>("/v1/admin/satpam");
@@ -540,7 +543,7 @@ export default function SatpamPage() {
       setImportFile(null);
     } catch (err) {
       const msg =
-        err instanceof Error ? err.message : "Failed to import satpam";
+        err instanceof Error ? err.message : "Failed to import security staff.";
       setImportError(msg);
       showError(msg);
     } finally {
@@ -754,9 +757,9 @@ export default function SatpamPage() {
     <div className="space-y-6">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
        <div>
-          <h2 className="text-xl font-semibold">Satpam</h2>
+          <h2 className="text-xl font-semibold">Security</h2>
           <p className="text-xs text-slate-500">
-            Manage guards and face enrollment.
+            Manage security staff and face enrollment.
           </p>
         </div>
         <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:items-center">
@@ -776,7 +779,7 @@ export default function SatpamPage() {
             }}
             disabled={!canManage("SATPAM")}
           >
-            + Add Satpam
+            + Add Security
           </Button>
         </div>
       </div>
@@ -787,7 +790,7 @@ export default function SatpamPage() {
       <section className="rounded-lg border bg-white p-4 shadow-sm">
         <div className="mb-3 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
           <h3 className="text-sm font-semibold text-slate-700">
-            Satpam List
+            Security List
           </h3>
          <div className="flex flex-wrap gap-2">
             {canManage("SATPAM") && (
@@ -820,7 +823,7 @@ export default function SatpamPage() {
                 variant="secondary"
                 onClick={handleExportSatpam}
               >
-                Export Satpam
+                Export Security
               </Button>
             )}
           </div>
@@ -854,7 +857,7 @@ export default function SatpamPage() {
                       <td className="px-3 py-2">{s.email}</td>
                       <td className="px-3 py-2">{s.jabatan}</td>
                       <td className="px-3 py-2">
-                        {s.jenis_kelamin === "L" ? "Laki-laki" : "Perempuan"}
+                        {s.jenis_kelamin === "L" ? "Male" : "Female"}
                       </td>
                       <td className="px-3 py-2">{s.no_telepon}</td>
                       <td className="px-3 py-2">
@@ -919,7 +922,7 @@ export default function SatpamPage() {
                       colSpan={showActionsColumn ? 8 : 7}
                       className="px-3 py-3 text-center text-sm text-slate-500"
                     >
-                      No satpam found.
+                      No security staff found.
                     </td>
                   </tr>
                 )}
@@ -1086,7 +1089,7 @@ export default function SatpamPage() {
           setEditing(null);
           setCreateOpen(false);
         }}
-        title={editing ? "Edit Satpam" : "Create Satpam"}
+        title={editing ? "Edit Security" : "Create Security"}
       >
         <form
           onSubmit={editing ? handleEditSubmit : handleCreate}
@@ -1204,8 +1207,8 @@ export default function SatpamPage() {
                     }))
               }
             >
-              <option value="L">Laki-laki</option>
-              <option value="P">Perempuan</option>
+              <option value="L">Male</option>
+              <option value="P">Female</option>
             </select>
           </div>
 

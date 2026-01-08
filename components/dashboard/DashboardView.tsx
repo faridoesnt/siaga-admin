@@ -33,11 +33,11 @@ export function DashboardView({ data, month, onMonthChange }: DashboardViewProps
             Attendance Dashboard
           </h1>
           <p className="text-xs text-slate-500">
-            Ringkasan performa kehadiran dan disiplin satpam.
+            Summary of security attendance and discipline for the selected month.
           </p>
         </div>
         <div className="flex items-center gap-2 text-xs text-slate-600">
-          <span>Bulan:</span>
+          <span>Month:</span>
           <input
             type="month"
             className="rounded-md border border-slate-300 bg-white px-2 py-1 text-xs text-slate-900 shadow-sm focus:border-slate-500 focus:outline-none"

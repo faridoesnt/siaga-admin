@@ -16,8 +16,7 @@ export function RiskEmployees({ items }: RiskEmployeesProps) {
             Risk / Red-Flag Personnel
           </h2>
           <p className="text-xs text-slate-500">
-            Daftar satpam dengan pola ketidakhadiran atau keterlambatan yang
-            berisiko.
+            List of security staff with risky patterns of absence or lateness.
           </p>
         </div>
       </div>
@@ -25,4 +24,3 @@ export function RiskEmployees({ items }: RiskEmployeesProps) {
     </section>
   );
 }
-

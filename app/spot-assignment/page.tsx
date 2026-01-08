@@ -294,7 +294,7 @@ export default function SpotAssignmentPage() {
           <table className="min-w-full text-left text-sm">
             <thead className="border-b bg-slate-50 text-xs font-medium uppercase text-slate-500">
               <tr>
-                <th className="px-3 py-2">Satpam</th>
+                <th className="px-3 py-2">Security</th>
                 <th className="px-3 py-2">Spot</th>
                 <th className="px-3 py-2">Active from</th>
                 <th className="px-3 py-2">Active until</th>
@@ -393,7 +393,7 @@ export default function SpotAssignmentPage() {
           >
             <div>
               <label className="mb-1 block text-xs font-medium text-slate-700">
-                Satpam
+                Security
               </label>
               <select
                 required
@@ -404,7 +404,7 @@ export default function SpotAssignmentPage() {
                   setForm((f) => ({ ...f, user_id: e.target.value }))
                 }
               >
-                <option value="">Select satpam</option>
+                <option value="">Select security</option>
                 {satpam.map((s) => (
                   <option key={s.id} value={s.id}>
                     {s.name} ({s.email})

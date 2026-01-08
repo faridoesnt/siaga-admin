@@ -30,10 +30,10 @@ export function KpiCard({ label, value, delta, trend, status }: KpiCardProps) {
         {deltaLabel}{" "}
         <span className="text-[10px] uppercase tracking-wide text-slate-400">
           {status === "good"
-            ? "Sehat"
+            ? "Healthy"
             : status === "warning"
-            ? "Perlu perhatian"
-            : "Butuh tindakan"}
+            ? "Needs attention"
+            : "Action required"}
         </span>
       </p>
     </div>

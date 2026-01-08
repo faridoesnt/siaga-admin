@@ -22,7 +22,7 @@ export function TrendChart({ trend }: TrendChartProps) {
   if (labels.length === 0) {
     return (
       <p className="text-xs text-slate-400">
-        Tidak ada data kehadiran pada bulan ini.
+        No attendance data for this month.
       </p>
     );
   }
@@ -37,10 +37,10 @@ export function TrendChart({ trend }: TrendChartProps) {
       });
     })(),
     rawDate: label,
-    hadir: trend.present[idx] ?? 0,
-    terlambat: trend.late[idx] ?? 0,
-    absen: trend.absent[idx] ?? 0,
-    belumAbsen: trend.belum_absen?.[idx] ?? 0,
+    present: trend.present[idx] ?? 0,
+    late: trend.late[idx] ?? 0,
+    absent: trend.absent[idx] ?? 0,
+    notCheckedIn: trend.belum_absen?.[idx] ?? 0,
   }));
 
   return (
@@ -58,33 +58,36 @@ export function TrendChart({ trend }: TrendChartProps) {
           <Legend />
           <Line
             type="monotone"
-            dataKey="hadir"
+            dataKey="present"
             stroke="#16a34a"
             strokeWidth={2}
             dot={false}
+            name="Present"
           />
           <Line
             type="monotone"
-            dataKey="terlambat"
+            dataKey="late"
             stroke="#f97316"
             strokeWidth={2}
             dot={false}
+            name="Late"
           />
           <Line
             type="monotone"
-            dataKey="absen"
+            dataKey="absent"
             stroke="#ef4444"
             strokeWidth={2}
             dot={false}
+            name="Absent"
           />
           <Line
             type="monotone"
-            dataKey="belumAbsen"
+            dataKey="notCheckedIn"
             stroke="#0ea5e9"
             strokeWidth={2}
             strokeDasharray="4 4"
             dot={false}
-            name="Belum absen"
+            name="Not yet checked in"
           />
         </LineChart>
       </ResponsiveContainer>
