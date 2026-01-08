@@ -995,7 +995,7 @@ export default function SatpamPage() {
                         </p>
                       </div>
                     </div>
-                  {showActionsColumn && (
+                    {showActionsColumn && (
                     <div className="mt-3 flex flex-wrap gap-2">
                       {canViewSatpam && (
                         <Button
@@ -1015,10 +1015,10 @@ export default function SatpamPage() {
                             size="sm"
                             variant="secondary"
                             className="px-2 py-1 text-[11px]"
-                            onClick={() =>
+                            onClick={(e) =>
                               openActionMenu(
                                 s,
-                                document.createElement("button")
+                                e.currentTarget as HTMLButtonElement
                               )
                             }
                           >
@@ -1027,9 +1027,10 @@ export default function SatpamPage() {
                         </>
                       )}
                     </div>
-                  )}
-                </div>
-              ))}
+                    )}
+                  </div>
+                );
+              })}
               {filtered.length === 0 && (
                 <p className="px-3 py-4 text-center text-xs text-slate-500">
                   No security staff found.
