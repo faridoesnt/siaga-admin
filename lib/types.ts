@@ -40,6 +40,8 @@ export interface Satpam {
   work_start_date: string;
   is_active: boolean;
   face_enrolled?: boolean;
+  photo_url?: string | null;
+  ktp_photo_url?: string | null;
 }
 
 export interface FaceEnrollStatus {

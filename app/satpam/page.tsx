@@ -33,6 +33,7 @@ interface CreateSatpamForm {
   status_pernikahan: string;
   kebangsaan: string;
   work_start_date: string;
+  // photo files handled separately
 }
 
 interface EditSatpamForm {
@@ -50,6 +51,7 @@ interface EditSatpamForm {
   status_pernikahan: string;
   kebangsaan: string;
   work_start_date: string;
+  // photo files handled separately
 }
 
 export default function SatpamPage() {
@@ -79,6 +81,8 @@ export default function SatpamPage() {
     kebangsaan: "",
     work_start_date: "",
   });
+  const [createProfilePhoto, setCreateProfilePhoto] = useState<File | null>(null);
+  const [createKTPPhoto, setCreateKTPPhoto] = useState<File | null>(null);
 
   const [editing, setEditing] = useState<Satpam | null>(null);
   const [editForm, setEditForm] = useState<EditSatpamForm>({
@@ -97,6 +101,8 @@ export default function SatpamPage() {
     kebangsaan: "",
     work_start_date: "",
   });
+  const [editProfilePhoto, setEditProfilePhoto] = useState<File | null>(null);
+  const [editKTPPhoto, setEditKTPPhoto] = useState<File | null>(null);
   const [savingEdit, setSavingEdit] = useState(false);
 
   const [enrollUser, setEnrollUser] = useState<Satpam | null>(null);
@@ -221,7 +227,15 @@ export default function SatpamPage() {
         method: "POST",
         body: JSON.stringify(createForm),
       });
-      setSatpam((prev) => [...prev, created]);
+      let updated = created;
+      // Optional: upload profile & KTP photos after user is created.
+      if (createProfilePhoto) {
+        updated = await uploadSatpamPhoto(updated, createProfilePhoto, "profile");
+      }
+      if (createKTPPhoto) {
+        updated = await uploadSatpamPhoto(updated, createKTPPhoto, "ktp");
+      }
+      setSatpam((prev) => [...prev, updated]);
       setCreateForm({
         name: "",
         email: "",
@@ -239,6 +253,8 @@ export default function SatpamPage() {
         kebangsaan: "",
         work_start_date: "",
       });
+      setCreateProfilePhoto(null);
+      setCreateKTPPhoto(null);
       showSuccess("Security staff created.");
       setCreateOpen(false);
     } catch (err) {
@@ -313,6 +329,8 @@ export default function SatpamPage() {
       kebangsaan: user.kebangsaan || "",
       work_start_date: toInputDate(user.work_start_date),
     });
+    setEditProfilePhoto(null);
+    setEditKTPPhoto(null);
   };
 
   const cancelEdit = () => {
@@ -333,6 +351,8 @@ export default function SatpamPage() {
       kebangsaan: "",
       work_start_date: "",
     });
+    setEditProfilePhoto(null);
+    setEditKTPPhoto(null);
   };
 
   const handleEditSubmit = async (e: React.FormEvent) => {
@@ -344,9 +364,14 @@ export default function SatpamPage() {
         method: "PATCH",
         body: JSON.stringify(editForm),
       });
-      setSatpam((prev) =>
-        prev.map((s) => (s.id === updated.id ? updated : s))
-      );
+      let merged = updated;
+      if (editProfilePhoto) {
+        merged = await uploadSatpamPhoto(merged, editProfilePhoto, "profile");
+      }
+      if (editKTPPhoto) {
+        merged = await uploadSatpamPhoto(merged, editKTPPhoto, "ktp");
+      }
+      setSatpam((prev) => prev.map((s) => (s.id === merged.id ? merged : s)));
       cancelEdit();
       showSuccess("Security staff updated.");
     } catch (err) {
@@ -549,6 +574,42 @@ export default function SatpamPage() {
     } finally {
       setImporting(false);
     }
+  };
+
+  const uploadSatpamPhoto = async (
+    user: Satpam,
+    file: File,
+    kind: "profile" | "ktp"
+  ): Promise<Satpam> => {
+    const token = getToken();
+    const formData = new FormData();
+    formData.append("photo", file);
+    const path =
+      kind === "profile"
+        ? `/v1/admin/satpam/${user.id}/photo`
+        : `/v1/admin/satpam/${user.id}/ktp-photo`;
+    const res = await fetch(`${API_BASE_URL}${path}`, {
+      method: "POST",
+      headers: token
+        ? {
+            Authorization: `Bearer ${token}`,
+          }
+        : undefined,
+      body: formData,
+    });
+    let payload: { success: boolean; data?: Satpam; error?: { message?: string } };
+    try {
+      payload = await res.json();
+    } catch {
+      throw new Error("Failed to upload photo");
+    }
+    if (!res.ok || !payload.success || !payload.data) {
+      const msg =
+        payload.error?.message || "Failed to upload photo";
+      showError(msg);
+      throw new Error(msg);
+    }
+    return payload.data;
   };
 
   const openEnroll = (user: Satpam) => {
@@ -857,7 +918,18 @@ export default function SatpamPage() {
                     const enrolled = s.face_enrolled === true;
                     return (
                       <tr key={s.id} className="border-b last:border-0">
-                        <td className="px-3 py-2">{s.name}</td>
+                        <td className="px-3 py-2">
+                          <div className="flex items-center gap-2">
+                            {s.photo_url && (
+                              <img
+                                src={`${API_BASE_URL}${s.photo_url}`}
+                                alt={s.name}
+                                className="h-8 w-8 rounded-full object-cover border border-slate-200"
+                              />
+                            )}
+                            <span>{s.name}</span>
+                          </div>
+                        </td>
                         <td className="px-3 py-2">{s.email}</td>
                         <td className="px-3 py-2">{s.jabatan}</td>
                         <td className="px-3 py-2">
@@ -946,13 +1018,22 @@ export default function SatpamPage() {
                 return (
                   <div key={s.id} className="px-3 py-3 text-xs">
                     <div className="flex items-center justify-between gap-2">
-                      <div>
-                        <p className="font-semibold text-slate-900">
-                          {s.name}
-                        </p>
-                        <p className="text-[11px] text-slate-500">
-                          {s.email}
-                        </p>
+                      <div className="flex items-center gap-2">
+                        {s.photo_url && (
+                          <img
+                            src={`${API_BASE_URL}${s.photo_url}`}
+                            alt={s.name}
+                            className="h-8 w-8 rounded-full object-cover border border-slate-200"
+                          />
+                        )}
+                        <div>
+                          <p className="font-semibold text-slate-900">
+                            {s.name}
+                          </p>
+                          <p className="text-[11px] text-slate-500">
+                            {s.email}
+                          </p>
+                        </div>
                       </div>
                       <div className="flex flex-col items-end gap-1">
                         <Badge variant={s.is_active ? "success" : "muted"}>
@@ -1083,6 +1164,22 @@ export default function SatpamPage() {
           size="lg"
         >
           <div className="grid gap-3 md:grid-cols-2 text-sm">
+            <div className="md:col-span-2 flex flex-wrap items-center gap-4">
+              {viewSatpam.photo_url && (
+                <img
+                  src={`${API_BASE_URL}${viewSatpam.photo_url}`}
+                  alt={viewSatpam.name}
+                  className="h-20 w-20 rounded-full object-cover border border-slate-200"
+                />
+              )}
+              {viewSatpam.ktp_photo_url && (
+                <img
+                  src={`${API_BASE_URL}${viewSatpam.ktp_photo_url}`}
+                  alt="ID card"
+                  className="h-20 w-28 rounded-md object-cover border border-slate-200"
+                />
+              )}
+            </div>
             <div className="md:col-span-2">
               <p className="text-xs font-semibold text-slate-700">Account</p>
             </div>
@@ -1207,6 +1304,42 @@ export default function SatpamPage() {
         >
           <div className="md:col-span-2 mb-1">
             <p className="text-xs font-semibold text-slate-700">Account</p>
+          </div>
+          <div className="md:col-span-1">
+            <label className="mb-1 block text-xs font-medium text-slate-700">
+              Profile photo
+            </label>
+            <input
+              type="file"
+              accept="image/*"
+              className="w-full text-xs"
+              onChange={(e) => {
+                const file = e.target.files?.[0] ?? null;
+                if (editing) {
+                  setEditProfilePhoto(file);
+                } else {
+                  setCreateProfilePhoto(file);
+                }
+              }}
+            />
+          </div>
+          <div className="md:col-span-1">
+            <label className="mb-1 block text-xs font-medium text-slate-700">
+              ID card photo (KTP)
+            </label>
+            <input
+              type="file"
+              accept="image/*"
+              className="w-full text-xs"
+              onChange={(e) => {
+                const file = e.target.files?.[0] ?? null;
+                if (editing) {
+                  setEditKTPPhoto(file);
+                } else {
+                  setCreateKTPPhoto(file);
+                }
+              }}
+            />
           </div>
           <div className="md:col-span-1">
             <label className="mb-1 block text-xs font-medium text-slate-700">
