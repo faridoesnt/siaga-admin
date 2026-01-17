@@ -83,6 +83,8 @@ export default function SatpamPage() {
   });
   const [createProfilePhoto, setCreateProfilePhoto] = useState<File | null>(null);
   const [createKTPPhoto, setCreateKTPPhoto] = useState<File | null>(null);
+  const [createProfilePreview, setCreateProfilePreview] = useState<string | null>(null);
+  const [createKTPPreview, setCreateKTPPreview] = useState<string | null>(null);
 
   const [editing, setEditing] = useState<Satpam | null>(null);
   const [editForm, setEditForm] = useState<EditSatpamForm>({
@@ -103,6 +105,8 @@ export default function SatpamPage() {
   });
   const [editProfilePhoto, setEditProfilePhoto] = useState<File | null>(null);
   const [editKTPPhoto, setEditKTPPhoto] = useState<File | null>(null);
+  const [editProfilePreview, setEditProfilePreview] = useState<string | null>(null);
+  const [editKTPPreview, setEditKTPPreview] = useState<string | null>(null);
   const [savingEdit, setSavingEdit] = useState(false);
 
   const [enrollUser, setEnrollUser] = useState<Satpam | null>(null);
@@ -138,6 +142,47 @@ export default function SatpamPage() {
   const [resetLoading, setResetLoading] = useState(false);
   const [viewSatpam, setViewSatpam] = useState<Satpam | null>(null);
   const [actionMenuState, setActionMenuState] = useState<ActionMenuState>(null);
+
+  // Build object URLs for local file previews in create/edit modal.
+  useEffect(() => {
+    if (!createProfilePhoto) {
+      setCreateProfilePreview(null);
+      return;
+    }
+    const url = URL.createObjectURL(createProfilePhoto);
+    setCreateProfilePreview(url);
+    return () => URL.revokeObjectURL(url);
+  }, [createProfilePhoto]);
+
+  useEffect(() => {
+    if (!createKTPPhoto) {
+      setCreateKTPPreview(null);
+      return;
+    }
+    const url = URL.createObjectURL(createKTPPhoto);
+    setCreateKTPPreview(url);
+    return () => URL.revokeObjectURL(url);
+  }, [createKTPPhoto]);
+
+  useEffect(() => {
+    if (!editProfilePhoto) {
+      setEditProfilePreview(null);
+      return;
+    }
+    const url = URL.createObjectURL(editProfilePhoto);
+    setEditProfilePreview(url);
+    return () => URL.revokeObjectURL(url);
+  }, [editProfilePhoto]);
+
+  useEffect(() => {
+    if (!editKTPPhoto) {
+      setEditKTPPreview(null);
+      return;
+    }
+    const url = URL.createObjectURL(editKTPPhoto);
+    setEditKTPPreview(url);
+    return () => URL.revokeObjectURL(url);
+  }, [editKTPPhoto]);
 
   const toInputDate = (value?: string | null): string => {
     if (!value) return "";
@@ -919,12 +964,12 @@ export default function SatpamPage() {
                     return (
                       <tr key={s.id} className="border-b last:border-0">
                         <td className="px-3 py-2">
-                          <div className="flex items-center gap-2">
+                          <div className="flex items-center gap-3">
                             {s.photo_url && (
                               <img
                                 src={`${API_BASE_URL}${s.photo_url}`}
                                 alt={s.name}
-                                className="h-8 w-8 rounded-full object-cover border border-slate-200"
+                                className="h-10 w-10 shrink-0 rounded-full object-cover border border-slate-200"
                               />
                             )}
                             <span>{s.name}</span>
@@ -1018,12 +1063,12 @@ export default function SatpamPage() {
                 return (
                   <div key={s.id} className="px-3 py-3 text-xs">
                     <div className="flex items-center justify-between gap-2">
-                      <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-3">
                         {s.photo_url && (
                           <img
                             src={`${API_BASE_URL}${s.photo_url}`}
                             alt={s.name}
-                            className="h-8 w-8 rounded-full object-cover border border-slate-200"
+                            className="h-10 w-10 shrink-0 rounded-full object-cover border border-slate-200"
                           />
                         )}
                         <div>
@@ -1164,22 +1209,41 @@ export default function SatpamPage() {
           size="lg"
         >
           <div className="grid gap-3 md:grid-cols-2 text-sm">
-            <div className="md:col-span-2 flex flex-wrap items-center gap-4">
-              {viewSatpam.photo_url && (
-                <img
-                  src={`${API_BASE_URL}${viewSatpam.photo_url}`}
-                  alt={viewSatpam.name}
-                  className="h-20 w-20 rounded-full object-cover border border-slate-200"
-                />
-              )}
-              {viewSatpam.ktp_photo_url && (
-                <img
-                  src={`${API_BASE_URL}${viewSatpam.ktp_photo_url}`}
-                  alt="ID card"
-                  className="h-20 w-28 rounded-md object-cover border border-slate-200"
-                />
-              )}
-            </div>
+            {(viewSatpam.photo_url || viewSatpam.ktp_photo_url) && (
+              <>
+                <div className="md:col-span-2">
+                  <p className="text-xs font-semibold text-slate-700">
+                    Photos
+                  </p>
+                </div>
+                <div className="md:col-span-2 flex flex-wrap items-start gap-6">
+                  {viewSatpam.photo_url && (
+                    <div className="flex flex-col items-center gap-1">
+                      <img
+                        src={`${API_BASE_URL}${viewSatpam.photo_url}`}
+                        alt={viewSatpam.name}
+                        className="h-28 w-28 rounded-full object-cover border border-slate-200"
+                      />
+                      <span className="text-[11px] text-slate-500">
+                        Profile photo
+                      </span>
+                    </div>
+                  )}
+                  {viewSatpam.ktp_photo_url && (
+                    <div className="flex flex-col items-center gap-1">
+                      <img
+                        src={`${API_BASE_URL}${viewSatpam.ktp_photo_url}`}
+                        alt="ID card"
+                        className="h-28 w-40 rounded-md object-cover border border-slate-200"
+                      />
+                      <span className="text-[11px] text-slate-500">
+                        ID card (KTP)
+                      </span>
+                    </div>
+                  )}
+                </div>
+              </>
+            )}
             <div className="md:col-span-2">
               <p className="text-xs font-semibold text-slate-700">Account</p>
             </div>
@@ -1322,6 +1386,29 @@ export default function SatpamPage() {
                 }
               }}
             />
+            <div className="mt-2">
+              {editing ? (
+                editProfilePreview ? (
+                  <img
+                    src={editProfilePreview}
+                    alt="Profile preview"
+                    className="h-24 w-24 rounded-full object-cover border border-slate-200"
+                  />
+                ) : editing?.photo_url ? (
+                  <img
+                    src={`${API_BASE_URL}${editing.photo_url}`}
+                    alt={editing.name}
+                    className="h-24 w-24 rounded-full object-cover border border-slate-200"
+                  />
+                ) : null
+              ) : createProfilePreview ? (
+                <img
+                  src={createProfilePreview}
+                  alt="Profile preview"
+                  className="h-24 w-24 rounded-full object-cover border border-slate-200"
+                />
+              ) : null}
+            </div>
           </div>
           <div className="md:col-span-1">
             <label className="mb-1 block text-xs font-medium text-slate-700">
@@ -1340,6 +1427,29 @@ export default function SatpamPage() {
                 }
               }}
             />
+            <div className="mt-2">
+              {editing ? (
+                editKTPPreview ? (
+                  <img
+                    src={editKTPPreview}
+                    alt="KTP preview"
+                    className="h-24 w-36 rounded-md object-cover border border-slate-200"
+                  />
+                ) : editing?.ktp_photo_url ? (
+                  <img
+                    src={`${API_BASE_URL}${editing.ktp_photo_url}`}
+                    alt="KTP"
+                    className="h-24 w-36 rounded-md object-cover border border-slate-200"
+                  />
+                ) : null
+              ) : createKTPPreview ? (
+                <img
+                  src={createKTPPreview}
+                  alt="KTP preview"
+                  className="h-24 w-36 rounded-md object-cover border border-slate-200"
+                />
+              ) : null}
+            </div>
           </div>
           <div className="md:col-span-1">
             <label className="mb-1 block text-xs font-medium text-slate-700">
