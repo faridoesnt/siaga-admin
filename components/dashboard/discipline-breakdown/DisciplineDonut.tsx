@@ -7,7 +7,6 @@ import {
   Cell,
   Tooltip,
   ResponsiveContainer,
-  Legend,
 } from "recharts";
 
 type DisciplineDonutProps = {
@@ -32,27 +31,58 @@ export function DisciplineDonut({ breakdown }: DisciplineDonutProps) {
     );
   }
 
+  const total = data.reduce((sum, item) => sum + item.value, 0);
+
   return (
-    <div className="h-64 w-full rounded-lg border bg-white px-2 py-3">
-      <ResponsiveContainer width="100%" height="100%">
-        <PieChart>
-          <Pie
-            data={data}
-            dataKey="value"
-            nameKey="name"
-            innerRadius={50}
-            outerRadius={80}
-            minAngle={4}
-            paddingAngle={3}
-          >
-            {data.map((entry, index) => (
-              <Cell key={entry.name} fill={COLORS[index % COLORS.length]} />
-            ))}
-          </Pie>
-          <Tooltip />
-          <Legend />
-        </PieChart>
-      </ResponsiveContainer>
+    <div className="w-full rounded-lg border bg-white px-4 py-4">
+      <div className="flex flex-col gap-4 md:flex-row md:items-center">
+        <div className="h-56 w-full md:h-52 md:w-1/2">
+          <ResponsiveContainer width="100%" height="100%">
+            <PieChart>
+              <Pie
+                data={data}
+                dataKey="value"
+                nameKey="name"
+                innerRadius={50}
+                outerRadius={80}
+                minAngle={4}
+                paddingAngle={3}
+              >
+                {data.map((entry, index) => (
+                  <Cell key={entry.name} fill={COLORS[index % COLORS.length]} />
+                ))}
+              </Pie>
+              <Tooltip />
+            </PieChart>
+          </ResponsiveContainer>
+        </div>
+        <div className="grid w-full gap-2 text-xs md:w-1/2">
+          {data.map((item, index) => {
+            const percentage =
+              total > 0 ? ((item.value / total) * 100).toFixed(1) : "0.0";
+            return (
+              <div
+                key={item.name}
+                className="flex items-center justify-between rounded-md bg-slate-50 px-3 py-2"
+              >
+                <div className="flex items-center gap-2">
+                  <span
+                    className="inline-block h-3 w-3 rounded-sm"
+                    style={{ backgroundColor: COLORS[index % COLORS.length] }}
+                  />
+                  <span className="text-slate-700">{item.name}</span>
+                </div>
+                <span className="text-slate-900">
+                  {item.value}
+                  {total > 0 && (
+                    <span className="ml-1 text-slate-500">({percentage}%)</span>
+                  )}
+                </span>
+              </div>
+            );
+          })}
+        </div>
+      </div>
     </div>
   );
 }
