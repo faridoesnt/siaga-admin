@@ -19,11 +19,19 @@ export function DashboardActions({ month }: DashboardActionsProps) {
   const [error, setError] = useState<string | null>(null);
 
   const computeDefaultRange = (monthStr: string): { from: string; to: string } => {
+    // Helper to format a Date as YYYY-MM-DD without timezone shifts.
+    const formatYMD = (d: Date) =>
+      d.toLocaleDateString("en-CA", {
+        year: "numeric",
+        month: "2-digit",
+        day: "2-digit",
+      });
+
     if (!monthStr || !/^\d{4}-\d{2}$/.test(monthStr)) {
       const now = new Date();
       const start = new Date(now.getFullYear(), now.getMonth(), 1);
-      const from = start.toISOString().slice(0, 10);
-      const to = now.toISOString().slice(0, 10);
+      const from = formatYMD(start);
+      const to = formatYMD(now);
       return { from, to };
     }
     const [yearStr, monStr] = monthStr.split("-");
@@ -32,8 +40,8 @@ export function DashboardActions({ month }: DashboardActionsProps) {
     const start = new Date(year, mon - 1, 1);
     const end = new Date(year, mon, 0);
     return {
-      from: start.toISOString().slice(0, 10),
-      to: end.toISOString().slice(0, 10),
+      from: formatYMD(start),
+      to: formatYMD(end),
     };
   };
 
@@ -88,14 +96,26 @@ export function DashboardActions({ month }: DashboardActionsProps) {
       return;
     }
 
+    // Normalize dates to YYYY-MM-DD in local time to avoid any timezone
+    // shifts when sending to backend.
+    const formatLocalYMD = (d: Date) => {
+      const year = d.getFullYear();
+      const month = String(d.getMonth() + 1).padStart(2, "0");
+      const day = String(d.getDate()).padStart(2, "0");
+      return `${year}-${month}-${day}`;
+    };
+
+    const normalizedFrom = formatLocalYMD(fromDate);
+    const normalizedTo = formatLocalYMD(toDate);
+
     setSubmitting(true);
     try {
       const payload = {
-        date_from: dateFrom,
-        date_to: dateTo,
+        date_from: normalizedFrom,
+        date_to: normalizedTo,
         format,
       };
-      const fallbackName = `attendance-report-${dateFrom.replace(/-/g, "")}-${dateTo.replace(/-/g, "")}.${format}`;
+      const fallbackName = `attendance-report-${normalizedFrom.replace(/-/g, "")}-${normalizedTo.replace(/-/g, "")}.${format}`;
       await downloadApiFilePost(
         "/v1/admin/reports/attendance/export",
         payload,
