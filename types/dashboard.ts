@@ -49,6 +49,17 @@ export interface DashboardRiskEmployee {
   risk_reason: string;
 }
 
+export interface DashboardGuardSummary {
+  id: string;
+  name: string;
+  position: string;
+  scheduled: number;
+  present: number;
+  absent: number;
+  late: number;
+  risk_score: number;
+}
+
 export interface DashboardAttendanceConsistency {
   consistent: number;
   irregular: number;
@@ -67,6 +78,7 @@ export interface AdminDashboardData {
   attendance_trend: DashboardAttendanceTrend;
   discipline_breakdown: DashboardDisciplineBreakdown;
   risk_employees: DashboardRiskEmployee[];
+  guard_summary: DashboardGuardSummary[];
   attendance_consistency: DashboardAttendanceConsistency;
   audit_compliance: DashboardAuditCompliance;
 }

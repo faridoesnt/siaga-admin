@@ -5,7 +5,7 @@ import { HeroInsight } from "./HeroInsight";
 import { ExecutiveSummary } from "./executive-summary/ExecutiveSummary";
 import { AttendanceTrend } from "./attendance-trend/AttendanceTrend";
 import { DisciplineBreakdown } from "./discipline-breakdown/DisciplineBreakdown";
-import { RiskEmployees } from "./risk-employees/RiskEmployees";
+import { GuardSummary } from "./guard-summary/GuardSummary";
 import { AttendanceConsistency } from "./attendance-consistency/AttendanceConsistency";
 import { AuditCompliance } from "./audit-compliance/AuditCompliance";
 import { DashboardActions } from "./actions/DashboardActions";
@@ -23,7 +23,7 @@ export function DashboardView({ data, month, onMonthChange }: DashboardViewProps
     late: [],
     absent: [],
   };
-  const safeRiskItems = data.risk_employees ?? [];
+  const safeGuardSummary = data.guard_summary ?? [];
 
   return (
     <div className="space-y-6">
@@ -51,7 +51,7 @@ export function DashboardView({ data, month, onMonthChange }: DashboardViewProps
       <ExecutiveSummary summary={data.summary} kpis={data.kpis} />
       <AttendanceTrend trend={safeTrend} />
       <DisciplineBreakdown breakdown={data.discipline_breakdown} />
-      <RiskEmployees items={safeRiskItems} />
+      <GuardSummary items={safeGuardSummary} />
       <AttendanceConsistency consistency={data.attendance_consistency} />
       <AuditCompliance audit={data.audit_compliance} />
       <DashboardActions month={month} />
