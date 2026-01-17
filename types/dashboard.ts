@@ -56,6 +56,7 @@ export interface DashboardGuardSummary {
   scheduled: number;
   present: number;
   absent: number;
+  upcoming: number;
   late: number;
   risk_score: number;
 }

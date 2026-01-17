@@ -28,6 +28,7 @@ export function GuardSummaryTable({ items }: GuardSummaryTableProps) {
             <th className="px-3 py-2 text-right">Scheduled</th>
             <th className="px-3 py-2 text-right">Present</th>
             <th className="px-3 py-2 text-right">Absent</th>
+            <th className="px-3 py-2 text-right">Upcoming</th>
             <th className="px-3 py-2 text-right">Late</th>
             <th className="px-3 py-2">Risk</th>
           </tr>
@@ -40,6 +41,7 @@ export function GuardSummaryTable({ items }: GuardSummaryTableProps) {
               <td className="px-3 py-1.5 text-right">{g.scheduled}</td>
               <td className="px-3 py-1.5 text-right">{g.present}</td>
               <td className="px-3 py-1.5 text-right">{g.absent}</td>
+              <td className="px-3 py-1.5 text-right">{g.upcoming}</td>
               <td className="px-3 py-1.5 text-right">{g.late}</td>
               <td className="px-3 py-1.5">
                 <RiskBadge score={g.risk_score} />
@@ -51,4 +53,3 @@ export function GuardSummaryTable({ items }: GuardSummaryTableProps) {
     </div>
   );
 }
-
